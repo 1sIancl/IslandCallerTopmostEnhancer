@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- ClassIsland 2.1.0.1 稳定版宿主为 .NET 8 + Avalonia 11.3.17。
-         插件只用 P/Invoke 与托管 API，目标框架取 net8.0 即可被宿主加载。 -->
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- ClassIsland 2.1.0.1 稳定版宿主为 .NET 8（net8.0-windows + WindowsDesktop.App）。
+         插件必须用 net8.0-windows 编译：纯 net8.0 的组件在 hostfxr 组件模式下
+         会报 "Failed to locate managed application"（-2147450734）。
+         IslandCaller 2.0.1.3 同为 net8.0-windows。 -->
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PlatformTarget>x64</PlatformTarget>

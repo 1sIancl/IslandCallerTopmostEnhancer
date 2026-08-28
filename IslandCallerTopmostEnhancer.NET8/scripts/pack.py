@@ -1,7 +1,7 @@
 import hashlib, os, shutil, sys, zipfile, re
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 version = sys.argv[1] if len(sys.argv) > 1 else "1.0.0.0"
-build = os.path.join(root, "bin", "Release", "net8.0")
+build = os.path.join(root, "bin", "Release", "net8.0-windows")
 out_dir = os.path.join(root, "artifacts", "release", version)
 plugin_dir = os.path.join(out_dir, "plugin")
 os.makedirs(plugin_dir, exist_ok=True)
