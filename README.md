@@ -13,17 +13,28 @@
 
 </div>
 
+## 版本选择（重要）
+
+本仓库同时提供两个技术栈的插件，**按你的 ClassIsland 版本二选一，请勿同时安装**：
+
+| 版本 | 适用 ClassIsland | 适用 IslandCaller | 技术栈 | 目录 / 下载 |
+|---|---|---|---|---|
+| **net10 版**（本页） | 2.1.1.0 / 2.1.1.1（2.2 技术预览线） | 2.1.x（含 2.1.0.0） | .NET 10 + Avalonia 12 | 仓库根目录；Releases 中 `IslandCaller.TopmostEnhancer.cipx` |
+| **稳定版（net8）** | **2.1.0.1（2.1 稳定线）** | **2.0.1.3** / 2.1.0.0 | .NET 8 + Avalonia 11.3.17 | [`IslandCallerTopmostEnhancer.NET8/`](IslandCallerTopmostEnhancer.NET8/)；Releases 中 `IslandCaller.TopmostEnhancer.NET8.cipx` |
+
+两个版本功能完全一致（七机制协同最高置顶 + UIA 增强检测），仅适配不同宿主技术栈。
+
 
 
 ## 特性
 
-- 🔝 **用户态最高置顶**：置顶带（topmost band）最顶端 + 持续占据 + 失效即时恢复；
-- ⚡ **六机制协同**：高频 Z 序重推 / 前台事件钩子 / 扩展样式强化 / Z 序校验自动恢复 /
+-  **用户态最高置顶**：置顶带（topmost band）最顶端 + 持续占据 + 失效即时恢复；
+-  **六机制协同**：高频 Z 序重推 / 前台事件钩子 / 扩展样式强化 / Z 序校验自动恢复 /
   全屏抢占检测 / 窗口自动发现，互相独立、可单独开关；
-- 🛡 **不抢焦点**：全程 `WS_EX_NOACTIVATE` + `SWP_NOACTIVATE`，点名悬浮窗不会打断教师操作；
-- 📵 **Alt+Tab 隐身**：`WS_EX_TOOLWINDOW` 使悬浮窗不进入任务切换列表；
-- 🔌 **零耦合**：不依赖 IslandCaller 任何程序集，跨插件程序集隔离，可独立安装/卸载；
-- ⚙️ **可视设置**：ClassIsland 设置页内可调总开关、重推周期与各机制开关。
+-  **不抢焦点**：全程 `WS_EX_NOACTIVATE` + `SWP_NOACTIVATE`，点名悬浮窗不会打断教师操作；
+-  **Alt+Tab 隐身**：`WS_EX_TOOLWINDOW` 使悬浮窗不进入任务切换列表；
+-  **零耦合**：不依赖 IslandCaller 任何程序集，跨插件程序集隔离，可独立安装/卸载；
+-  **可视设置**：ClassIsland 设置页内可调总开关、重推周期与各机制开关。
 
 ## 环境要求
 
