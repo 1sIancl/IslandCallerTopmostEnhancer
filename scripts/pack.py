@@ -7,9 +7,9 @@ out_dir = os.path.join(root, "artifacts", "release", version)
 plugin_dir = os.path.join(out_dir, "plugin")
 os.makedirs(plugin_dir, exist_ok=True)
 
-# 1) 复制构建产物（排除 pdb / deps.json）
+# 1) 复制构建产物（排除 pdb，保留 deps.json）
 for name in os.listdir(build):
-    if name.endswith((".pdb", ".deps.json")):
+    if name.endswith(".pdb"):  # deps.json 必须保留：ClassIsland 插件加载器（AssemblyDependencyResolver）依赖它
         continue
     shutil.copy2(os.path.join(build, name), os.path.join(plugin_dir, name))
 

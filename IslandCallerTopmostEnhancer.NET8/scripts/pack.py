@@ -6,7 +6,7 @@ out_dir = os.path.join(root, "artifacts", "release", version)
 plugin_dir = os.path.join(out_dir, "plugin")
 os.makedirs(plugin_dir, exist_ok=True)
 for name in os.listdir(build):
-    if name.endswith((".pdb", ".deps.json")):
+    if name.endswith(".pdb"):  # deps.json 必须保留：ClassIsland 2.1.0.1 插件加载器依赖它解析入口程序集
         continue
     shutil.copy2(os.path.join(build, name), os.path.join(plugin_dir, name))
 manifest_path = os.path.join(plugin_dir, "manifest.yml")
