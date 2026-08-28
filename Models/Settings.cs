@@ -16,6 +16,7 @@ public class Settings : INotifyPropertyChanged
     private bool _enableToolWindow = true;
     private bool _enableNoActivate = true;
     private bool _enableForegroundHook = true;
+    private bool _enableUiaDetection = true;
     private List<string> _extraTitleKeywords = new() { "FluentShower", "LiquidShower" };
 
     /// <summary>是否启用置顶增强（总开关）。</summary>
@@ -61,6 +62,17 @@ public class Settings : INotifyPropertyChanged
     {
         get => _enableForegroundHook;
         set => SetProperty(ref _enableForegroundHook, value);
+    }
+
+    /// <summary>
+    /// UIA 增强检测：用 UI Automation 语义（DWM cloaked / offscreen）识别
+    /// 被系统隐藏的 UWP 或现代化窗口，避免把"看不见的窗口"误判为遮挡者，
+    /// 同时更准确地识别全屏状态。默认开启。
+    /// </summary>
+    public bool EnableUiaDetection
+    {
+        get => _enableUiaDetection;
+        set => SetProperty(ref _enableUiaDetection, value);
     }
 
     /// <summary>

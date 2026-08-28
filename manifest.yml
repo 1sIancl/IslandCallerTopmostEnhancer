@@ -11,5 +11,5 @@ entranceAssembly: "IslandCaller.TopmostEnhancer.dll"   # 插件入口程序集
 apiVersion: 2.1.1.0                        # 面向的 ClassIsland 最低版本（兼容 2.1.1.0 / 2.1.1.1）
 url: https://github.com/1sIancl/IslandCallerTopmostEnhancer
 author: 1sIancl
-version: 1.0.0.0
+version: 1.0.1.0
 icon: icon.png

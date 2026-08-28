@@ -132,6 +132,19 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 
+    // ---- DWM（桌面窗口管理器）----
+    /// <summary>DWM 属性：窗口是否被系统隐藏（cloaked）。UI Automation 判断
+    /// IsOffscreen / 隐藏状态的底层数据源即为此属性（UWP 挂起窗口、虚拟桌面
+    /// 切换后的窗口、任务视图中的窗口等会返回非 0 值）。</summary>
+    public const int DWMWA_CLOAKED = 14;
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmGetWindowAttribute(
+        IntPtr hwnd,
+        int dwAttribute,
+        out int pvAttribute,
+        int cbAttribute);
+
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);

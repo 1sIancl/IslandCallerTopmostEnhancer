@@ -119,6 +119,10 @@ public partial class SettingsPage : SettingsPageBase
             "不抢焦点",
             "附加 WS_EX_NOACTIVATE 样式，置顶时不会夺取输入焦点",
             nameof(Models.Settings.EnableNoActivate)));
+        root.Children.Add(CreateToggle(
+            "UIA 增强检测",
+            "识别被系统隐藏的 UWP / 现代化窗口（DWM cloaked），全屏与遮挡判定更准确",
+            nameof(Models.Settings.EnableUiaDetection)));
 
         // ---- 额外关键词 ----
         root.Children.Add(new TextBlock

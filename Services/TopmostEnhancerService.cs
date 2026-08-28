@@ -36,6 +36,10 @@ namespace IslandCaller.TopmostEnhancer.Services;
 ///   6. 【窗口发现】周期性扫描 Avalonia 桌面生命周期窗口集合，通过程序集名 /
 ///      类型名 / 标题关键词识别 IslandCaller 的窗口（跨插件程序集隔离，
 ///      无需编译期依赖）。
+///   7. 【UIA 增强检测】基于 UI Automation 语义（DWM cloaked / offscreen 属性，
+///      即 UIA IsOffscreen 的底层数据源）识别被系统隐藏的 UWP / 现代化窗口：
+///      全屏检测跳过 cloaked 前台窗口，Z 序校验只认"真正可见"的遮挡者，
+///      并放宽 2px 容差以覆盖 DPI 缩放下 UWP 全屏窗口的亚像素差异。
 ///
 /// 说明：用户态普通窗口无法覆盖"独占全屏"（exclusive fullscreen，多见于游戏），
 /// 但课堂场景常用的全屏演示（PPT / 白板 / 直播 / 视频）均为无边框窗口，
@@ -220,6 +224,13 @@ public sealed class TopmostEnhancerService : IDisposable
                 return false;
             }
 
+            // UIA 增强：前台窗口若被系统 cloaked（虚拟桌面切换 / 任务视图 / UWP 挂起），
+            // 其"全屏"对用户不可见，不应触发重推，避免无谓的系统调用。
+            if (_settings.EnableUiaDetection && IsCloaked(foreground))
+            {
+                return false;
+            }
+
             if (!NativeMethods.GetWindowRect(foreground, out var rect))
             {
                 return false;
@@ -240,8 +251,9 @@ public sealed class TopmostEnhancerService : IDisposable
                 return false;
             }
 
-            // 窗口矩形完全覆盖显示器边界（含任务栏区域）视为全屏
-            return rect.Equals(monitorInfo.rcMonitor);
+            // 窗口矩形完全覆盖显示器边界（含任务栏区域）视为全屏。
+            // 允许 2px 容差：UWP / 现代化应用在 DPI 缩放下矩形可能与边界有亚像素差异。
+            return IsRectCovering(rect, monitorInfo.rcMonitor, tolerance: 2);
         }
         catch (Exception)
         {
@@ -260,14 +272,66 @@ public sealed class TopmostEnhancerService : IDisposable
              above != IntPtr.Zero;
              above = NativeMethods.GetWindow(above, NativeMethods.GW_HWNDPREV))
         {
-            // 忽略隐藏窗口与自身的其它目标窗口
-            if (NativeMethods.IsWindowVisible(above) && !_trackedHwnds.Contains(above))
+            // 忽略隐藏 / cloaked 窗口与自身的其它目标窗口
+            if (IsEffectivelyVisible(above) && !_trackedHwnds.Contains(above))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// UIA 增强：判断窗口是否"真正可见"。
+    /// Win32 的 IsWindowVisible 对 cloaked 窗口（UWP 挂起、虚拟桌面切换后、
+    /// 任务视图中等被 DWM 隐藏的窗口）仍返回 true，导致误判为遮挡者；
+    /// 这里结合 DWM cloaked 属性（UI Automation IsOffscreen 的底层数据源）过滤，
+    /// 使 Z 序校验只认"用户真正看得见的窗口"。
+    /// </summary>
+    private bool IsEffectivelyVisible(IntPtr hwnd)
+    {
+        if (!NativeMethods.IsWindowVisible(hwnd))
+        {
+            return false;
+        }
+
+        if (_settings.EnableUiaDetection && IsCloaked(hwnd))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 查询窗口是否被 DWM cloaked（系统级隐藏）。等价于 UI Automation 的
+    /// IsOffscreen 语义，用于识别 UWP / 现代化应用的隐藏窗口。
+    /// </summary>
+    private static bool IsCloaked(IntPtr hwnd)
+    {
+        try
+        {
+            var result = NativeMethods.DwmGetWindowAttribute(
+                hwnd,
+                NativeMethods.DWMWA_CLOAKED,
+                out var cloaked,
+                sizeof(int));
+            return result == 0 && cloaked != 0;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>窗口矩形是否在给定容差内覆盖目标矩形（全屏判定）。</summary>
+    private static bool IsRectCovering(NativeMethods.RECT rect, NativeMethods.RECT target, int tolerance)
+    {
+        return Math.Abs(rect.Left - target.Left) <= tolerance &&
+               Math.Abs(rect.Top - target.Top) <= tolerance &&
+               Math.Abs(rect.Right - target.Right) <= tolerance &&
+               Math.Abs(rect.Bottom - target.Bottom) <= tolerance;
     }
 
     /// <summary>判断某个 Avalonia 窗口是否属于 IslandCaller。</summary>

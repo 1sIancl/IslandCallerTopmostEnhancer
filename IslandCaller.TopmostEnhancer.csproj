@@ -10,7 +10,7 @@
     <Prefer32Bit>false</Prefer32Bit>
     <!-- 插件依赖（Avalonia / ClassIsland 等）由 ClassIsland 宿主提供，不打进插件包 -->
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-    <Version>1.0.0.0</Version>
+    <Version>1.0.1.0</Version>
   </PropertyGroup>
 
   <PropertyGroup>
