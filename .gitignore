@@ -1,0 +1,16 @@
+# 构建输出
+bin/
+obj/
+artifacts/
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+
+# 本地工具
+dotnet10/
+gen_icon.py
+releases.json
+*.tar.gz

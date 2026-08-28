@@ -1,0 +1,15 @@
+# 插件清单文件。格式参考：
+# https://docs.classisland.tech/dev/plugins/create-project/#插件清单文件
+
+id: IslandCaller.TopmostEnhancer          # 插件唯一 id
+name: IslandCaller 置顶增强                # 插件显示名称
+description: >-
+  将 IslandCaller 的悬浮窗与点名结果窗口的置顶优先级提升到最高级：
+  高频 Z 序重推 + 前台窗口事件钩子 + 窗口扩展样式强化，多机制同时生效，
+  确保在任何场景下都保持屏幕最上层显示。
+entranceAssembly: "IslandCaller.TopmostEnhancer.dll"   # 插件入口程序集
+apiVersion: 2.1.1.0                        # 面向的 ClassIsland 最低版本（兼容 2.1.1.0 / 2.1.1.1）
+url: https://github.com/HickoryTrail/IslandCaller
+author: IslandCaller Community
+version: 1.0.0.0
+icon: icon.png
