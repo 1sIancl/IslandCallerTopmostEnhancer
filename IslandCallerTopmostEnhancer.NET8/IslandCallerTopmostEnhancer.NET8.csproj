@@ -1,37 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- ClassIsland 2.1.0.1 稳定版宿主为 .NET 8（net8.0-windows + WindowsDesktop.App）。
-         插件必须用 net8.0-windows 编译：纯 net8.0 的组件在 hostfxr 组件模式下
-         会报 "Failed to locate managed application"（-2147450734）。
-         IslandCaller 2.0.1.3 同为 net8.0-windows。 -->
+    <!-- 重构 v2：完全复刻 IslandCaller 2.0.1.3 官方可加载的构建方式。
+         标准 PackageReference ClassIsland.PluginSdk + AnyCPU，
+         由 .NET SDK 生成完整 deps.json（此前手动 Reference 方式生成的
+         简化 deps.json 导致 hostfxr 组件模式报 -2147450734）。 -->
     <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <!-- 必须与 IslandCaller 2.0.1.3 一致保持 AnyCPU（不设 PlatformTarget）：
-         x64 编译的组件 dll 在 ClassIsland 2.1.0.1 宿主中 hostfxr 组件模式
-         报 "Failed to locate managed application"（-2147450734 / LibHostInvalidArgs）。 -->
-    <Prefer32Bit>false</Prefer32Bit>
-    <!-- 插件依赖（Avalonia / ClassIsland 等）由 ClassIsland 宿主提供，不打进插件包 -->
-    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-    <Version>1.0.0.0</Version>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!--
-      编译期程序集引用目录：指向 ClassIsland 2.1.0.1 发布包解压目录（app-2.1.0.1-0）。
-      标准做法是引用 NuGet 包 ClassIsland.PluginSdk（2.0.0.2），
-      本工程为便于离线构建，改为直接引用发布包内的程序集。可用
-      -p:ClassIslandRuntimeDir=... 覆盖。
-    -->
-    <ClassIslandRuntimeDir Condition="'$(ClassIslandRuntimeDir)' == ''">$(MSBuildProjectDirectory)\..\ci2101\app-2.1.0.1-0</ClassIslandRuntimeDir>
+    <!-- 不设 PlatformTarget：必须 AnyCPU（与 IslandCaller 2.0.1.3 一致） -->
+    <Version>1.0.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- 仅编译期引用，不复制到输出（宿主运行时自带这些程序集） -->
-    <Reference Include="$(ClassIslandRuntimeDir)/*.dll">
-      <Private>false</Private>
-    </Reference>
+    <!-- 完全复刻 IslandCaller 2.0.1.3（可正常加载）的 SDK 版本：
+         镜像上 2.1.0.1 的传递依赖 Avalonia.FreeDesktop 11.3.17 缺失，
+         2.0.0.2 依赖链完整可还原。宿主 ClassIsland 2.1.0.1 兼容 apiVersion 2.0.0.2。 -->
+    <PackageReference Include="ClassIsland.PluginSdk" Version="2.0.0.2">
+      <ExcludeAssets>runtime; native</ExcludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
