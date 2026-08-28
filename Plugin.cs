@@ -26,6 +26,22 @@ public class Plugin : PluginBase
 {
     private TopmostEnhancerService? _topmostEnhancerService;
 
+    /// <summary>插件设置文件路径（由 Initialize 设置，供设置页"保存更改"使用）。</summary>
+    internal static string SettingsFilePath { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// 立即把指定设置写入配置文件（设置页"保存更改"按钮调用）。
+    /// </summary>
+    internal static void SaveSettings(Settings settings)
+    {
+        if (string.IsNullOrEmpty(SettingsFilePath))
+        {
+            return;
+        }
+
+        ConfigureFileHelper.SaveConfig(SettingsFilePath, settings);
+    }
+
     /// <summary>插件配置（持久化在插件配置目录 Settings.json）。</summary>
     public Settings Settings { get; set; } = new();
 
@@ -34,6 +50,7 @@ public class Plugin : PluginBase
         // 加载 / 保存配置
         var settingsPath = Path.Combine(PluginConfigFolder, "Settings.json");
         Settings = ConfigureFileHelper.LoadConfig<Settings>(settingsPath);
+        SettingsFilePath = settingsPath;
         Settings.PropertyChanged += (_, _) =>
             ConfigureFileHelper.SaveConfig(settingsPath, Settings);
 

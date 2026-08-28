@@ -1,33 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- ClassIsland 2.1.1.x（2.2 技术预览线）宿主为 .NET 10 + Avalonia 12。
-         插件本身只用 P/Invoke 与托管 API，目标框架取 net10.0 即可被宿主加载。 -->
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- 重构 v2：完全复刻 IslandCaller 官方可加载的构建方式——
+         标准 PackageReference ClassIsland.PluginSdk + AnyCPU，
+         由 .NET SDK 生成 deps.json（.NET 10 SDK 生成精简 deps.json 是
+         .NET 10 体系标准行为，与 .NET 10 宿主配套；.NET 8 宿主才要求完整版）。
+         宿主 ClassIsland 2.1.1.x 为 net10.0-windows + Avalonia 12。 -->
+    <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PlatformTarget>x64</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-    <!-- 插件依赖（Avalonia / ClassIsland 等）由 ClassIsland 宿主提供，不打进插件包 -->
-    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-    <Version>1.0.1.0</Version>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!--
-      编译期程序集引用目录：指向 ClassIsland 2.1.1.1 发布包解压目录（app-2.1.1.1-0）。
-      标准做法是引用 NuGet 包 ClassIsland.PluginSdk（2.1.1 / 2.1.1.1），
-      本工程为便于离线构建，改为直接引用发布包内的程序集，
-      其 API 表面与 SDK 包完全一致。可用 -p:ClassIslandRuntimeDir=... 覆盖。
-    -->
-    <ClassIslandRuntimeDir Condition="'$(ClassIslandRuntimeDir)' == ''">$(MSBuildProjectDirectory)\..\ci2111\app-2.1.1.1-0</ClassIslandRuntimeDir>
+    <!-- 不设 PlatformTarget：保持 AnyCPU（与 IslandCaller 一致） -->
+    <Version>1.1.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- 仅编译期引用，不复制到输出（宿主运行时自带这些程序集） -->
-    <Reference Include="$(ClassIslandRuntimeDir)/*.dll">
-      <Private>false</Private>
-    </Reference>
+    <!-- 与宿主 ClassIsland 2.1.1.x 匹配的 SDK 版本（镜像含 Avalonia 12.1.1 依赖链） -->
+    <PackageReference Include="ClassIsland.PluginSdk" Version="2.1.1.1">
+      <ExcludeAssets>runtime; native</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 排除仓库内并列的 net8 稳定版子目录，避免 SDK 通配符将其一并编译进本程序集 -->
+    <Compile Remove="IslandCallerTopmostEnhancer.NET8\**" />
+    <None Remove="IslandCallerTopmostEnhancer.NET8\**" />
+    <Content Remove="IslandCallerTopmostEnhancer.NET8\**" />
+    <Page Remove="IslandCallerTopmostEnhancer.NET8\**" />
+    <EmbeddedResource Remove="IslandCallerTopmostEnhancer.NET8\**" />
   </ItemGroup>
 
   <ItemGroup>

@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using ClassIsland.Core.Abstractions.Controls;
 using ClassIsland.Core.Attributes;
 using ClassIsland.Core.Enums.SettingsWindow;
@@ -16,9 +17,21 @@ namespace IslandCaller.TopmostEnhancer.Views;
 [SettingsPageInfo("plugins.IslandCallerTopmostEnhancer", "IslandCaller 置顶增强", "\uE8B7", "\uE8B7", SettingsPageCategory.External)]
 public partial class SettingsPage : SettingsPageBase
 {
+    private TextBlock? _savedTip;
+    private readonly DispatcherTimer _hideSavedTip = new() { Interval = TimeSpan.FromSeconds(2) };
+
     public SettingsPage()
     {
         DataContext = new SettingsPageViewModel();
+        _hideSavedTip.Tick += (_, _) =>
+        {
+            if (_savedTip is not null)
+            {
+                _savedTip.IsVisible = false;
+            }
+
+            _hideSavedTip.Stop();
+        };
         BuildContent();
     }
 
@@ -144,6 +157,50 @@ public partial class SettingsPage : SettingsPageBase
             FontSize = 11,
             Opacity = 0.6,
             TextWrapping = TextWrapping.Wrap
+        });
+
+        // ---- 保存更改 ----
+        var saveRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            Margin = new Thickness(0, 14, 0, 0)
+        };
+        var saveButton = new Button
+        {
+            Content = "保存更改",
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Classes = { "accent" }
+        };
+        _savedTip = new TextBlock
+        {
+            Text = "已保存 ✓",
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = new SolidColorBrush(Color.Parse("#2E7D32")),
+            IsVisible = false
+        };
+        saveButton.Click += (_, _) =>
+        {
+            // 手动立即写入配置文件（设置项本身也会在变更时自动保存，这里是显式落盘 + 反馈）
+            Plugin.SaveSettings(((SettingsPageViewModel)DataContext!).Settings);
+            if (_savedTip is not null)
+            {
+                _savedTip.IsVisible = true;
+            }
+
+            _hideSavedTip.Stop();
+            _hideSavedTip.Start();
+        };
+        saveRow.Children.Add(saveButton);
+        saveRow.Children.Add(_savedTip);
+        root.Children.Add(saveRow);
+        root.Children.Add(new TextBlock
+        {
+            Text = "设置项变更时会自动保存；点击此按钮可立即将所有更改写入配置文件。",
+            FontSize = 11,
+            Opacity = 0.6,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 4, 0, 0)
         });
 
         Content = new ScrollViewer { Content = root };
