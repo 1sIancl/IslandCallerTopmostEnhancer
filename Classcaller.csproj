@@ -9,6 +9,8 @@
         <Prefer32Bit>false</Prefer32Bit>
         <!-- Plugin dependencies are supplied by ClassIsland; only OmniTTS.Shared is bundled below. -->
         <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+        <!-- 排除 patcher 工具目录，避免其 obj/bin 里的生成文件被本插件编译。 -->
+        <DefaultItemExcludes>$(DefaultItemExcludes);classisland-2.2-skip-preview-warning/**</DefaultItemExcludes>
     </PropertyGroup>
 
     <PropertyGroup>

@@ -12,8 +12,10 @@ author: 1sIancl
 version: 1.2.1.0
 apiVersion: 2.1.1.1
 icon: icon.png
+supportedOSPlatforms:
+  - Windows
 repoOwner: 1sIancl
 repoName: IslandCallerTopmostEnhancer
-assetsRoot: main/
+assetsRoot: main
 artifactName: Classcaller.cipx
-tagPattern: "*.*.*"
+tagPattern: "1.*.*.*"

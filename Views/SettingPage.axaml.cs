@@ -31,7 +31,67 @@ public partial class SettingPage : SettingsPageBase
         vm = (SettingPageViewModel)DataContext!;
         historyService = IAppHost.GetService<HistoryService>();
         logger = IAppHost.GetService<ILogger<SettingPage>>();
+        vm.PasswordSetupRequested += OnPasswordSetupRequested;
         logger.LogInformation("SettingPage 初始化完成");
+    }
+
+    private async void OnPasswordSetupRequested(bool isViewPassword)
+    {
+        // 开启密码开关但未设置密码时，引导设置密码，避免锁定后无法解锁。
+        var passwordBox = new TextBox
+        {
+            PasswordChar = '●',
+            PlaceholderText = isViewPassword ? "输入新查看密码" : "输入新修改密码",
+            Width = 260
+        };
+        var dialog = new FAContentDialog
+        {
+            Title = isViewPassword ? "设置查看密码" : "设置修改密码",
+            Content = passwordBox,
+            VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            PrimaryButtonText = "确定",
+            SecondaryButtonText = "取消",
+            DefaultButton = FAContentDialogButton.Primary
+        };
+        var result = await dialog.ShowAsync(GetOwnerWindow());
+        if (result != FAContentDialogResult.Primary)
+        {
+            // 用户取消：回退开关
+            if (isViewPassword)
+            {
+                vm.IsViewPasswordEnabled = false;
+            }
+            else
+            {
+                vm.IsEditPasswordEnabled = false;
+            }
+            return;
+        }
+
+        var newPassword = passwordBox.Text ?? string.Empty;
+        if (string.IsNullOrEmpty(newPassword))
+        {
+            // 密码为空：回退开关
+            if (isViewPassword)
+            {
+                vm.IsViewPasswordEnabled = false;
+            }
+            else
+            {
+                vm.IsEditPasswordEnabled = false;
+            }
+            await CommonTaskDialogs.ShowDialog("密码为空", "密码不能为空，已取消开启密码保护。", this);
+            return;
+        }
+
+        if (isViewPassword)
+        {
+            vm.SetViewPassword(newPassword);
+        }
+        else
+        {
+            vm.SetEditPassword(newPassword);
+        }
     }
 
     private async void CreateProfileButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

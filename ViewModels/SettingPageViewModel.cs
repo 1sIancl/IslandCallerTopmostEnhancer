@@ -255,6 +255,10 @@ public class SettingPageViewModel : ReactiveObject
     public IReadOnlyList<ImageOption> ImageOptions => BuiltinImages.Options;
 
     // 安全设置（双密码：查看密码 + 修改密码，逻辑互不关联）
+
+    /// <summary>请求设置密码（true=查看密码，false=修改密码）。当开启密码开关但未设置密码时触发。</summary>
+    public event Action<bool>? PasswordSetupRequested;
+
     private bool _isViewPasswordEnabled;
     public bool IsViewPasswordEnabled
     {
@@ -476,6 +480,11 @@ public class SettingPageViewModel : ReactiveObject
                 {
                     IsViewUnlocked = true;
                 }
+                else if (string.IsNullOrEmpty(Settings.Instance.Security.ViewPasswordHash))
+                {
+                    // 开启查看密码但未设置密码，避免锁定后无法解锁，请求设置密码
+                    PasswordSetupRequested?.Invoke(true);
+                }
             }
             else if (args.PropertyName == nameof(IsEditPasswordEnabled))
             {
@@ -483,6 +492,11 @@ public class SettingPageViewModel : ReactiveObject
                 if (!IsEditPasswordEnabled)
                 {
                     IsEditUnlocked = true;
+                }
+                else if (string.IsNullOrEmpty(Settings.Instance.Security.EditPasswordHash))
+                {
+                    // 开启修改密码但未设置密码，请求设置密码
+                    PasswordSetupRequested?.Invoke(false);
                 }
             }
         };
