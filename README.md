@@ -1,4 +1,9 @@
 # Classcaller
+![Platform](https://img.shields.io/badge/platform-Windows%2010%202004%2B-blue)
+![ClassIsland](https://img.shields.io/badge/ClassIsland-2.1.1.0%20%2F%202.1.1.1-orange)
+![.NET](https://img.shields.io/badge/.NET-10-purple)
+![License](https://img.shields.io/badge/License-GPL--3.0-green)
+</div>
 
 > **灵感来源于 [IslandCaller](https://github.com/HickoryTrail/IslandCaller)**，由 [1sIancl](https://github.com/1sIancl) 独立维护。
 > 如果你原来在用 IslandCaller，可以把 Classcaller 当作它的"换主题、改了一堆东西、修了若干 bug、还能继续维护"的入。
