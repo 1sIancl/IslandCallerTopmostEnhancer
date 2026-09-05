@@ -18,6 +18,9 @@ internal class WindowsManager
     private bool _isInitialized;
     private bool _isRecreatingHover;
 
+    /// <summary>当前活动的结果展示任务控制源。最新一次点名会取消上一个，保证同一时刻只有一个任务控制展示窗口。</summary>
+    private CancellationTokenSource? _activeShowCts;
+
     public Window? HoverWindow { get; private set; }
     public Window? ShowerWindow { get; private set; }
 
@@ -51,112 +54,179 @@ internal class WindowsManager
 
     internal async Task ShowCallWindowAsync(string text, float duration, CancellationToken token)
     {
-        _logger.LogInformation("Showing call window for {Duration} seconds with text: {Text}", duration, text);
-        var appearance = Settings.Instance.Appearance;
-        var icon = CreateResultIcon(appearance);
-        var nameText = new TextBlock
-        {
-            Text = text,
-            FontSize = appearance.ResultFontSize,
-            FontWeight = FontWeight.Bold,
-            FontStretch = FontStretch.Expanded,
-            FontFamily = string.IsNullOrWhiteSpace(appearance.FontFamily) ? null : new FontFamily(appearance.FontFamily),
-            Margin = new Thickness(15, 0, 0, 0),
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-        };
-        var showPanel = new StackPanel
-        {
-            Orientation = Avalonia.Layout.Orientation.Horizontal,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-            Margin = new Thickness(25, 0),
-            Children = { icon, nameText }
-        };
-
-        // 复用展示窗口：液态玻璃窗口反复创建/销毁会导致 MorerialsAvalonia
-        // 的 Desktop Duplication / D3D11 资源无法及时释放，内存持续增长。
-        // 因此只创建一次，点名时更新内容并显示，结束后隐藏而非销毁。
-        var showerWindow = GetOrCreateShowerWindow();
-
-        if (showerWindow is LiquidShower liquidShower)
-        {
-            liquidShower.SetDisplayContent(showPanel);
-        }
-        else
-        {
-            showerWindow.Content = showPanel;
-        }
-
-        showPanel.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var screen = showerWindow.Screens.Primary;
-        PixelRect? captureRect = null;
-        if (screen is not null && showPanel.DesiredSize.Width > 0)
-        {
-            var scaling = screen.Scaling;
-            var width = Math.Max(1, (int)Math.Ceiling(showPanel.DesiredSize.Width));
-            // 高度随结果字号自适应，避免大字号时被固定 110 高度裁剪
-            var height = Math.Max(110, (int)Math.Ceiling(showPanel.DesiredSize.Height + 40));
-            showerWindow.Width = width;
-            showerWindow.Height = height;
-
-            if (showerWindow is LiquidShower liquidGlassWindow)
-            {
-                liquidGlassWindow.ApplyGlassExtent(height);
-            }
-
-            var widthPixels = Math.Max(1, (int)Math.Ceiling(width * scaling));
-            var heightPixels = Math.Max(1, (int)Math.Ceiling(height * scaling));
-            var workArea = screen.WorkingArea;
-            var x = workArea.X + Math.Max(0, (workArea.Width - widthPixels) / 2);
-            var y = workArea.Y + Math.Max(0, (workArea.Height - heightPixels) / 2);
-            showerWindow.Position = new PixelPoint(x, y);
-            captureRect = new PixelRect(x, y, widthPixels, heightPixels);
-        }
-
-        if (showerWindow is FluentShower)
-        {
-            // 自定义结果文字色优先；留空则按屏幕亮度自动选黑白
-            var foreground = ParseBrush(appearance.ResultTextColor);
-            if (foreground is null)
-            {
-                foreground = Brushes.Black;
-                if (captureRect is PixelRect rect &&
-                    _screenBrightnessHelper.TryGetAverageRelativeLuminance(rect, out var luminance))
-                {
-                    foreground = ScreenBrightnessHelper.GetRecommendedForeground(luminance) == Colors.White
-                        ? Brushes.White
-                        : Brushes.Black;
-                }
-            }
-
-            // 图标是 Path（几何图标）时用 Fill，图片则保持原样
-            if (icon is Avalonia.Controls.Shapes.Path pathIcon)
-            {
-                pathIcon.Fill = foreground;
-            }
-
-            nameText.Foreground = foreground;
-
-            // 自定义结果窗口背景色
-            var background = ParseBrush(appearance.ResultBackground);
-            if (background is not null)
-            {
-                showerWindow.Background = background;
-            }
-        }
-
-        showerWindow.Show();
+        // —— 最新优先：取消上一个仍在展示/等待的任务，避免连续点名时多个任务
+        //    交错 Show/Hide 同一个窗口，导致窗口残留关不掉或 UI 卡死。 ——
         try
         {
-            await Task.Delay((int)(duration * 1000), token);
+            _activeShowCts?.Cancel();
         }
-        catch (OperationCanceledException)
+        catch (ObjectDisposedException)
         {
+            // 上一个任务已完成清理，忽略
+        }
+
+        try
+        {
+            _activeShowCts?.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+
+        _activeShowCts = null;
+
+        var myCts = new CancellationTokenSource();
+        _activeShowCts = myCts;
+        try
+        {
+            // 本次点名在开始前已被打断且没有后继：收起可能残留的窗口，不展示。
+            if (token.IsCancellationRequested)
+            {
+                ShowerWindow?.Hide();
+                return;
+            }
+
+            using var _ = token.Register(myCts.Cancel);
+
+            _logger.LogInformation("Showing call window for {Duration} seconds with text: {Text}", duration, text);
+            var appearance = Settings.Instance.Appearance;
+            var icon = CreateResultIcon(appearance);
+            var nameText = new TextBlock
+            {
+                Text = text,
+                FontSize = appearance.ResultFontSize,
+                FontWeight = FontWeight.Bold,
+                FontStretch = FontStretch.Expanded,
+                FontFamily = string.IsNullOrWhiteSpace(appearance.FontFamily) ? null : new FontFamily(appearance.FontFamily),
+                Margin = new Thickness(15, 0, 0, 0),
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
+            var showPanel = new StackPanel
+            {
+                Orientation = Avalonia.Layout.Orientation.Horizontal,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Margin = new Thickness(25, 0),
+                Children = { icon, nameText }
+            };
+
+            // 复用展示窗口：液态玻璃窗口反复创建/销毁会导致 MorerialsAvalonia
+            // 的 Desktop Duplication / D3D11 资源无法及时释放，内存持续增长。
+            // 因此只创建一次，点名时更新内容并显示，结束后隐藏而非销毁。
+            var showerWindow = GetOrCreateShowerWindow();
+
+            if (showerWindow is LiquidShower liquidShower)
+            {
+                liquidShower.SetDisplayContent(showPanel);
+            }
+            else
+            {
+                showerWindow.Content = showPanel;
+            }
+
+            showPanel.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            var screen = showerWindow.Screens.Primary;
+            PixelRect? captureRect = null;
+            if (screen is not null && showPanel.DesiredSize.Width > 0)
+            {
+                var scaling = screen.Scaling;
+                var width = Math.Max(1, (int)Math.Ceiling(showPanel.DesiredSize.Width));
+                // 高度随结果字号自适应，避免大字号时被固定 110 高度裁剪
+                var height = Math.Max(110, (int)Math.Ceiling(showPanel.DesiredSize.Height + 40));
+                showerWindow.Width = width;
+                showerWindow.Height = height;
+
+                if (showerWindow is LiquidShower liquidGlassWindow)
+                {
+                    liquidGlassWindow.ApplyGlassExtent(height);
+                }
+
+                var widthPixels = Math.Max(1, (int)Math.Ceiling(width * scaling));
+                var heightPixels = Math.Max(1, (int)Math.Ceiling(height * scaling));
+                var workArea = screen.WorkingArea;
+                var x = workArea.X + Math.Max(0, (workArea.Width - widthPixels) / 2);
+                var y = workArea.Y + Math.Max(0, (workArea.Height - heightPixels) / 2);
+                showerWindow.Position = new PixelPoint(x, y);
+                captureRect = new PixelRect(x, y, widthPixels, heightPixels);
+            }
+
+            if (showerWindow is FluentShower)
+            {
+                // 自定义结果文字色优先；留空则按屏幕亮度自动选黑白。
+                // 自动黑白时把截屏亮度计算放到后台线程，避免同步 BitBlt 阻塞 UI 导致卡顿。
+                var foreground = ParseBrush(appearance.ResultTextColor);
+                if (foreground is null && captureRect is PixelRect rect)
+                {
+                    showerWindow.Show();
+                    IBrush? recommended = null;
+                    try
+                    {
+                        recommended = await Task.Run(() =>
+                        {
+                            return _screenBrightnessHelper.TryGetAverageRelativeLuminance(rect, out var luminance)
+                                ? (ScreenBrightnessHelper.GetRecommendedForeground(luminance) == Colors.White
+                                    ? Brushes.White
+                                    : Brushes.Black)
+                                : null;
+                        });
+                    }
+                    catch
+                    {
+                        // 截图失败则保持默认前景色
+                    }
+
+                    if (recommended is not null && !myCts.IsCancellationRequested && showerWindow.IsVisible)
+                    {
+                        foreground = recommended;
+                    }
+                }
+                else
+                {
+                    showerWindow.Show();
+                }
+
+                if (foreground is not null)
+                {
+                    // 图标是 Path（几何图标）时用 Fill，图片则保持原样
+                    if (icon is Avalonia.Controls.Shapes.Path pathIcon)
+                    {
+                        pathIcon.Fill = foreground;
+                    }
+
+                    nameText.Foreground = foreground;
+                }
+
+                // 自定义结果窗口背景色
+                var background = ParseBrush(appearance.ResultBackground);
+                if (background is not null)
+                {
+                    showerWindow.Background = background;
+                }
+            }
+            else
+            {
+                showerWindow.Show();
+            }
+
+            try
+            {
+                await Task.Delay((int)(duration * 1000), myCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
         }
         finally
         {
             // 隐藏而非关闭，保留 MaterialHost 的 GPU 管线供下次点名复用。
-            showerWindow.Hide();
+            // 仅当自己仍是最新的展示任务时才隐藏，避免把后续点名刚显示的窗口误隐藏。
+            if (_activeShowCts == myCts)
+            {
+                _activeShowCts = null;
+                ShowerWindow?.Hide();
+            }
+
+            myCts.Dispose();
         }
 
         _logger.LogInformation("Call window hidden for text: {Text}", text);
@@ -213,6 +283,8 @@ internal class WindowsManager
         var window = CreateShowerWindow();
         window.WindowStartupLocation = WindowStartupLocation.Manual;
         window.SizeToContent = SizeToContent.Manual;
+        // 点击结果窗口任意位置立即关闭本次展示（用户不想等展示时长结束）。
+        window.PointerPressed += (_, _) => _activeShowCts?.Cancel();
         ShowerWindow = window;
         _logger.LogInformation("展示窗口已创建：{Theme}", window.GetType().Name);
         return window;
