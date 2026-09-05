@@ -1,0 +1,62 @@
+diff --git a/ClassIsland/App.axaml.cs b/ClassIsland/App.axaml.cs
+index b1ee29c0..43c82070 100644
+--- a/ClassIsland/App.axaml.cs
++++ b/ClassIsland/App.axaml.cs
+@@ -103,6 +103,14 @@ public partial class App : AppBase, IAppHost
+ 
+     internal static bool _isCriticalSafeModeEnabled = false;
+ 
++    /// <summary>
++    /// 是否显示 2.2 开发者预览版的开屏技术性警告弹窗（“欢迎使用 2.2-Misha Developer Preview”）。
++    /// 设为 false 可跳过该警告，软件启动时不显示警告窗口、直接进入主界面（默认 false）。
++    /// 该弹窗仅用于提示当前版本为技术预览版，跳过它不影响任何其他启动安全检测与功能。
++    /// 后续版本升级时，若官方删除了该弹窗代码，可一并删除本字段。
++    /// </summary>
++    internal static readonly bool ShowDeveloperPreviewWarning = false;
++
+     internal static bool AutoDisableCorruptPlugins
+     {
+         get
+@@ -579,23 +587,28 @@ public partial class App : AppBase, IAppHost
+         
+ #if RELEASE
+         // TODO: 退出 DP 后记得删
+-        await new FATaskDialog()
++        // 开发者预览版开屏技术性警告弹窗。ShowDeveloperPreviewWarning 为 false 时跳过，
++        // 启动时不显示该警告窗口、直接进入主界面（默认 false，不影响其他启动检测与功能）。
++        if (ShowDeveloperPreviewWarning)
+         {
+-            Title = "ClassIsland",
+-            Header = "欢迎使用 2.2-Misha Developer Preview",
+-            Content = "此版本仅供开发人员进行早期预览，稳定性欠佳，不适用于生产环境或日常使用。如果您在使用的过程中遇到问题，欢迎前往 GitHub issues 上提交 issue！",
+-            IconSource = new AdvancedImageIconSource()
++            await new FATaskDialog()
+             {
+-                Uri = "avares://ClassIsland/Assets/HoYoStickers/米沙_欢迎光临.png"
+-            },
+-            XamlRoot = GetRootWindow(),
+-            Buttons = [
+-                new FATaskDialogButton("确定", true)
++                Title = "ClassIsland",
++                Header = "欢迎使用 2.2-Misha Developer Preview",
++                Content = "此版本仅供开发人员进行早期预览，稳定性欠佳，不适用于生产环境或日常使用。如果您在使用的过程中遇到问题，欢迎前往 GitHub issues 上提交 issue！",
++                IconSource = new AdvancedImageIconSource()
+                 {
+-                    IsDefault = true
+-                }
+-            ]
+-        }.ShowAsync();
++                    Uri = "avares://ClassIsland/Assets/HoYoStickers/米沙_欢迎光临.png"
++                },
++                XamlRoot = GetRootWindow(),
++                Buttons = [
++                    new FATaskDialogButton("确定", true)
++                    {
++                        IsDefault = true
++                    }
++                ]
++            }.ShowAsync();
++        }
+ #endif
+ 
+         // 检测临时目录
