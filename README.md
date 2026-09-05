@@ -1,7 +1,7 @@
 # Classcaller
 
 > **灵感来源于 [IslandCaller](https://github.com/HickoryTrail/IslandCaller)**，由 [1sIancl](https://github.com/1sIancl) 独立维护。
-> 如果你原来在用 IslandCaller，可以把 Classcaller 当作它的"换主题、改了一堆东西、修了若干 bug、还能继续维护"的继任者。
+> 如果你原来在用 IslandCaller，可以把 Classcaller 当作它的"换主题、改了一堆东西、修了若干 bug、还能继续维护"的入。
 
 ## 这是什么
 
@@ -14,7 +14,7 @@ Classcaller 是 [ClassIsland](https://github.com/ClassIsland/ClassIsland) 的点
 1. 打开 ClassIsland → **插件市场** → 搜 `Classcaller` → 安装。
 2. **应用设置 → 插件 → Classcaller 设置** → 该改的改。
 3. 首次启动会自动建一份示例名单，进档案编辑替换成自己班的就行。
-
+4.这个的配置应该是和islandcaller的是通用的
 或手动装：下载 Release 里的 `Classcaller.cipx`，放进 `Plugins/Classcaller/` 目录。
 
 ## 怎么用
