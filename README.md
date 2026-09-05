@@ -171,4 +171,4 @@ URI（绑快捷方式或联动）：
 
 ## 许可
 
-本项目使用 [GPL-3.0](https://github.com/1sIancl/IslandCallerTopmostEnhancer/blob/main/LICENSE) 许可证开源。
+本项目使用 [GPL-3.0](https://github.com/1sIancl/Classcaller/blob/main/LICENSE) 许可证开源。
