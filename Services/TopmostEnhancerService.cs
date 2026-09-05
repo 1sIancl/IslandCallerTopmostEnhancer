@@ -145,11 +145,14 @@ public sealed class TopmostEnhancerService : IDisposable
                 return;
             }
 
-            // 收集当前所有 Classcaller 窗口句柄
+            // 收集当前所有 Classcaller 窗口句柄。
+            // 只跟踪可见窗口：被 Hide() 的窗口（点名结果窗展示结束、悬浮窗临时隐藏）
+            // 不应再被周期重推打扰，否则会和业务层的 Show/Hide 竞争，
+            // 导致结果窗"关不掉"或高频点名时互相踩踏卡死。
             var current = new HashSet<IntPtr>();
             foreach (var window in lifetime.Windows)
             {
-                if (!IsClasscallerWindow(window))
+                if (!window.IsVisible || !IsClasscallerWindow(window))
                 {
                     continue;
                 }
@@ -389,12 +392,15 @@ public sealed class TopmostEnhancerService : IDisposable
     {
         // 机制 1：置顶带 + 带内最顶端。SWP_NOACTIVATE 保证不抢焦点，
         // SWP_ASYNCWINDOWPOS 防止目标窗口线程阻塞时本调用卡死。
+        // 注意：绝不能带 SWP_SHOWWINDOW —— 置顶只应改变窗口 Z 序，
+        // 若带 SHOWWINDOW 会在结果窗/悬浮窗被 Hide() 后每 250ms 强制复活，
+        // 造成"结果窗关不掉、抽多了界面卡死"。
         NativeMethods.SetWindowPos(
             hwnd,
             NativeMethods.HWND_TOPMOST,
             0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE |
-            NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW |
+            NativeMethods.SWP_NOACTIVATE |
             NativeMethods.SWP_ASYNCWINDOWPOS);
 
         // 机制 3：扩展样式强化（仅在需要时写入，避免无谓的系统调用）

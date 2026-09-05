@@ -26,6 +26,7 @@ namespace Classcaller.Services.ClasscallerService
         private IOmniTTS? OmniTTS { get; set; }
         private ISpeechService? ClassIslandTTS { get; set; }
         private WindowsManager WindowsManager { get; set; }
+        private ClasscallerNotificationProviderNew? NotificationProvider { get; set; }
         public Status Status { get; set; }
         public ClasscallerService(ILogger<ClasscallerService> logger)
         {
@@ -41,6 +42,8 @@ namespace Classcaller.Services.ClasscallerService
             ProfileRuntimeService = IAppHost.GetService<ProfileRuntimeService>();
             Status = IAppHost.GetService<Status>();
             WindowsManager = IAppHost.GetService<WindowsManager>();
+            NotificationProvider = IAppHost.TryGetService<ClasscallerNotificationProviderNew>()
+                ?? new ClasscallerNotificationProviderNew();
             // 获取服务
             LessonsService = IAppHost.TryGetService<ILessonsService>();
             ClassIslandProfileService = IAppHost.TryGetService<IProfileService>();
@@ -220,7 +223,15 @@ namespace Classcaller.Services.ClasscallerService
             var thisCts = Cts;
             if (Settings.Instance.TTS.Provider == Classcaller.TtsProvider.OmniTTS) OmniTTS?.PlayAudio(speechContent, Cts.Token);
             else if (Settings.Instance.TTS.Provider == Classcaller.TtsProvider.ClassIsland) ClassIslandTTS?.EnqueueSpeechQueue(speechContent);
-            if ((Settings.Instance.Call.NotifyMethod & 0b01) != 0) _ = new ClasscallerNotificationProviderNew().RandomCall(output, duration, Cts.Token);
+            if ((Settings.Instance.Call.NotifyMethod & 0b01) != 0)
+            {
+                // 复用同一个已注册的提醒提供方实例发通知。不能每次 new：
+                // NotificationProviderBase 构造会自动向通知中心重复注册，抽多了会越积越多导致卡死。
+                if (NotificationProvider is not null)
+                {
+                    _ = NotificationProvider.RandomCall(output, duration, Cts.Token);
+                }
+            }
             if ((Settings.Instance.Call.NotifyMethod & 0b10) != 0) _ = WindowsManager.ShowCallWindowAsync(output, duration, Cts.Token);
             try
             {
