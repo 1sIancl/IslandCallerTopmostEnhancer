@@ -254,6 +254,9 @@ public class SettingPageViewModel : ReactiveObject
     /// <summary>图片字段可选的内置选项（无 + 内置图标）。</summary>
     public IReadOnlyList<ImageOption> ImageOptions => BuiltinImages.Options;
 
+    /// <summary>置顶增强设置（绑定到设置页的置顶增强分组）。</summary>
+    public TopmostSetting Topmost => Settings.Instance.Topmost;
+
     // 安全设置（双密码：查看密码 + 修改密码，逻辑互不关联）
 
     /// <summary>请求设置密码（true=查看密码，false=修改密码）。当开启密码开关但未设置密码时触发。</summary>

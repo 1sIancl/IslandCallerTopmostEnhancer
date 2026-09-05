@@ -49,6 +49,7 @@ namespace Classcaller.Models
             RegistryKey IsC_SecurityKey = IsC_RootKey?.CreateSubKey("Security", writable: true);
             RegistryKey IsC_AlgorithmKey = IsC_RootKey?.CreateSubKey("Algorithm", writable: true);
             RegistryKey IsC_AppearanceKey = IsC_RootKey?.CreateSubKey("Appearance", writable: true);
+            RegistryKey IsC_TopmostKey = IsC_RootKey?.CreateSubKey("Topmost", writable: true);
 
             IsC_GeneralKey?.SetValue("BreakDisable", Instance.General.BreakDisable);
             IsC_GeneralKey?.SetValue("Interruptable", Instance.General.Interruptable);
@@ -87,6 +88,14 @@ namespace Classcaller.Models
             IsC_AppearanceKey?.SetValue("FontFamily", Instance.Appearance.FontFamily);
             IsC_AppearanceKey?.SetValue("ResultFontSize", Instance.Appearance.ResultFontSize);
             IsC_AppearanceKey?.SetValue("ResultBackground", Instance.Appearance.ResultBackground);
+            IsC_TopmostKey?.SetValue("Enabled", Instance.Topmost.Enabled);
+            IsC_TopmostKey?.SetValue("IntervalMs", Instance.Topmost.IntervalMs);
+            IsC_TopmostKey?.SetValue("EnableTopmostStyle", Instance.Topmost.EnableTopmostStyle);
+            IsC_TopmostKey?.SetValue("EnableToolWindow", Instance.Topmost.EnableToolWindow);
+            IsC_TopmostKey?.SetValue("EnableNoActivate", Instance.Topmost.EnableNoActivate);
+            IsC_TopmostKey?.SetValue("EnableForegroundHook", Instance.Topmost.EnableForegroundHook);
+            IsC_TopmostKey?.SetValue("EnableUiaDetection", Instance.Topmost.EnableUiaDetection);
+            IsC_TopmostKey?.SetValue("ExtraTitleKeywords", JsonSerializer.Serialize(Instance.Topmost.ExtraTitleKeywords));
 
             ProfileService.CreateDemoProfile(Instance.Profile.DefaultProfile);
             ClassIsland.Core.Controls.CommonTaskDialogs.ShowDialog("Welcome", "欢迎使用Classcaller2.0");
@@ -104,6 +113,7 @@ namespace Classcaller.Models
             RegistryKey IsC_SecurityKey;
             RegistryKey IsC_AlgorithmKey;
             RegistryKey IsC_AppearanceKey;
+            RegistryKey IsC_TopmostKey;
 
             if (IsC_RootKey == null)
             {
@@ -128,6 +138,7 @@ namespace Classcaller.Models
                 IsC_SecurityKey = IsC_RootKey?.OpenSubKey("Security", writable: true) ?? IsC_RootKey?.CreateSubKey("Security", writable: true);
                 IsC_AlgorithmKey = IsC_RootKey?.OpenSubKey("Algorithm", writable: true) ?? IsC_RootKey?.CreateSubKey("Algorithm", writable: true);
                 IsC_AppearanceKey = IsC_RootKey?.OpenSubKey("Appearance", writable: true) ?? IsC_RootKey?.CreateSubKey("Appearance", writable: true);
+                IsC_TopmostKey = IsC_RootKey?.OpenSubKey("Topmost", writable: true) ?? IsC_RootKey?.CreateSubKey("Topmost", writable: true);
 
                 Instance.General.BreakDisable = Convert.ToBoolean(IsC_GeneralKey?.GetValue("BreakDisable") ?? true);
                 Instance.General.Interruptable = Convert.ToBoolean(IsC_GeneralKey?.GetValue("Interruptable") ?? false);
@@ -173,6 +184,15 @@ namespace Classcaller.Models
                 Instance.Appearance.FontFamily = IsC_AppearanceKey?.GetValue("FontFamily") as string ?? "HarmonyOS Sans SC";
                 Instance.Appearance.ResultFontSize = Convert.ToDouble(IsC_AppearanceKey?.GetValue("ResultFontSize") ?? 60);
                 Instance.Appearance.ResultBackground = IsC_AppearanceKey?.GetValue("ResultBackground") as string ?? string.Empty;
+                Instance.Topmost.Enabled = Convert.ToBoolean(IsC_TopmostKey?.GetValue("Enabled") ?? true);
+                Instance.Topmost.IntervalMs = Convert.ToInt32(IsC_TopmostKey?.GetValue("IntervalMs") ?? 250);
+                Instance.Topmost.EnableTopmostStyle = Convert.ToBoolean(IsC_TopmostKey?.GetValue("EnableTopmostStyle") ?? true);
+                Instance.Topmost.EnableToolWindow = Convert.ToBoolean(IsC_TopmostKey?.GetValue("EnableToolWindow") ?? true);
+                Instance.Topmost.EnableNoActivate = Convert.ToBoolean(IsC_TopmostKey?.GetValue("EnableNoActivate") ?? true);
+                Instance.Topmost.EnableForegroundHook = Convert.ToBoolean(IsC_TopmostKey?.GetValue("EnableForegroundHook") ?? true);
+                Instance.Topmost.EnableUiaDetection = Convert.ToBoolean(IsC_TopmostKey?.GetValue("EnableUiaDetection") ?? true);
+                var extraKeywordsJson = IsC_TopmostKey?.GetValue("ExtraTitleKeywords") as string;
+                Instance.Topmost.ExtraTitleKeywords = JsonSerializer.Deserialize<List<string>>(extraKeywordsJson ?? "[]") ?? ["FluentShower", "LiquidShower"];
                 Save();
             }
 
@@ -191,6 +211,7 @@ namespace Classcaller.Models
             RegistryKey IsC_SecurityKey = IsC_RootKey?.OpenSubKey("Security", writable: true) ?? IsC_RootKey?.CreateSubKey("Security", writable: true);
             RegistryKey IsC_AlgorithmKey = IsC_RootKey?.OpenSubKey("Algorithm", writable: true) ?? IsC_RootKey?.CreateSubKey("Algorithm", writable: true);
             RegistryKey IsC_AppearanceKey = IsC_RootKey?.OpenSubKey("Appearance", writable: true) ?? IsC_RootKey?.CreateSubKey("Appearance", writable: true);
+            RegistryKey IsC_TopmostKey = IsC_RootKey?.OpenSubKey("Topmost", writable: true) ?? IsC_RootKey?.CreateSubKey("Topmost", writable: true);
 
             IsC_GeneralKey?.SetValue("BreakDisable", Instance.General.BreakDisable);
             IsC_GeneralKey?.SetValue("Interruptable", Instance.General.Interruptable);
@@ -229,6 +250,14 @@ namespace Classcaller.Models
             IsC_AppearanceKey?.SetValue("FontFamily", Instance.Appearance.FontFamily);
             IsC_AppearanceKey?.SetValue("ResultFontSize", Instance.Appearance.ResultFontSize);
             IsC_AppearanceKey?.SetValue("ResultBackground", Instance.Appearance.ResultBackground);
+            IsC_TopmostKey?.SetValue("Enabled", Instance.Topmost.Enabled);
+            IsC_TopmostKey?.SetValue("IntervalMs", Instance.Topmost.IntervalMs);
+            IsC_TopmostKey?.SetValue("EnableTopmostStyle", Instance.Topmost.EnableTopmostStyle);
+            IsC_TopmostKey?.SetValue("EnableToolWindow", Instance.Topmost.EnableToolWindow);
+            IsC_TopmostKey?.SetValue("EnableNoActivate", Instance.Topmost.EnableNoActivate);
+            IsC_TopmostKey?.SetValue("EnableForegroundHook", Instance.Topmost.EnableForegroundHook);
+            IsC_TopmostKey?.SetValue("EnableUiaDetection", Instance.Topmost.EnableUiaDetection);
+            IsC_TopmostKey?.SetValue("ExtraTitleKeywords", JsonSerializer.Serialize(Instance.Topmost.ExtraTitleKeywords));
         }
 
         /// <summary>
@@ -300,6 +329,9 @@ namespace Classcaller.Models
 
             // Appearance
             model.Appearance.PropertyChanged += (_, _) => onChange();
+
+            // Topmost
+            model.Topmost.PropertyChanged += (_, _) => onChange();
         }
     }
 

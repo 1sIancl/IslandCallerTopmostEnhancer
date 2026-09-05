@@ -14,6 +14,7 @@ namespace Classcaller.Models
         public SecuritySetting Security { get; set; } = new SecuritySetting();
         public AlgorithmSetting Algorithm { get; set; } = new AlgorithmSetting();
         public AppearanceSetting Appearance { get; set; } = new AppearanceSetting();
+        public TopmostSetting Topmost { get; set; } = new TopmostSetting();
     }
 
     public class GeneralSetting : INotifyPropertyChanged
@@ -459,6 +460,98 @@ namespace Classcaller.Models
         {
             get => _resultBackground;
             set { if (_resultBackground != value) { _resultBackground = value; OnPropertyChanged(nameof(ResultBackground)); } }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged(string name) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    /// <summary>置顶增强设置（把悬浮窗 / 结果窗口的置顶优先级提升到用户态最高级）。</summary>
+    public class TopmostSetting : INotifyPropertyChanged
+    {
+        public TopmostSetting()
+        {
+            _enabled = true;
+            _intervalMs = 250;
+            _enableTopmostStyle = true;
+            _enableToolWindow = true;
+            _enableNoActivate = true;
+            _enableForegroundHook = true;
+            _enableUiaDetection = true;
+            _extraTitleKeywords = ["FluentShower", "LiquidShower"];
+        }
+
+        private bool _enabled;
+
+        /// <summary>是否启用置顶增强（总开关）。</summary>
+        public bool Enabled
+        {
+            get => _enabled;
+            set { if (_enabled != value) { _enabled = value; OnPropertyChanged(nameof(Enabled)); } }
+        }
+
+        private int _intervalMs;
+
+        /// <summary>Z 序重推周期（毫秒），建议 100~500。</summary>
+        public int IntervalMs
+        {
+            get => _intervalMs;
+            set { if (_intervalMs != value) { _intervalMs = value; OnPropertyChanged(nameof(IntervalMs)); } }
+        }
+
+        private bool _enableTopmostStyle;
+
+        /// <summary>强化 WS_EX_TOPMOST 扩展样式。</summary>
+        public bool EnableTopmostStyle
+        {
+            get => _enableTopmostStyle;
+            set { if (_enableTopmostStyle != value) { _enableTopmostStyle = value; OnPropertyChanged(nameof(EnableTopmostStyle)); } }
+        }
+
+        private bool _enableToolWindow;
+
+        /// <summary>附加 WS_EX_TOOLWINDOW，从 Alt+Tab 隐藏窗口。</summary>
+        public bool EnableToolWindow
+        {
+            get => _enableToolWindow;
+            set { if (_enableToolWindow != value) { _enableToolWindow = value; OnPropertyChanged(nameof(EnableToolWindow)); } }
+        }
+
+        private bool _enableNoActivate;
+
+        /// <summary>附加 WS_EX_NOACTIVATE，避免窗口抢焦点。</summary>
+        public bool EnableNoActivate
+        {
+            get => _enableNoActivate;
+            set { if (_enableNoActivate != value) { _enableNoActivate = value; OnPropertyChanged(nameof(EnableNoActivate)); } }
+        }
+
+        private bool _enableForegroundHook;
+
+        /// <summary>启用全局前台窗口事件钩子。</summary>
+        public bool EnableForegroundHook
+        {
+            get => _enableForegroundHook;
+            set { if (_enableForegroundHook != value) { _enableForegroundHook = value; OnPropertyChanged(nameof(EnableForegroundHook)); } }
+        }
+
+        private bool _enableUiaDetection;
+
+        /// <summary>UIA 增强检测（DWM cloaked 识别隐藏窗口）。</summary>
+        public bool EnableUiaDetection
+        {
+            get => _enableUiaDetection;
+            set { if (_enableUiaDetection != value) { _enableUiaDetection = value; OnPropertyChanged(nameof(EnableUiaDetection)); } }
+        }
+
+        private List<string> _extraTitleKeywords;
+
+        /// <summary>额外匹配关键词（窗口标题包含任一关键词即视为目标窗口）。</summary>
+        public List<string> ExtraTitleKeywords
+        {
+            get => _extraTitleKeywords;
+            set { if (_extraTitleKeywords != value) { _extraTitleKeywords = value; OnPropertyChanged(nameof(ExtraTitleKeywords)); } }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

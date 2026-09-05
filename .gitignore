@@ -18,3 +18,5 @@ releases.json
 *.tar.gz
 *.json.tmp
 *.json.tmp
+*.log
+*.log

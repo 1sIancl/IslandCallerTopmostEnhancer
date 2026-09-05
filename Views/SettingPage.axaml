@@ -114,6 +114,68 @@
                     </fa:FASettingsExpander>
 
                     <Separator Margin="0 12 0 4" />
+                    <ci:IconText Glyph="&#xE7B7;" Text="置顶增强" Margin="0,0,0,4"/>
+                    <fa:FASettingsExpander
+                    IconSource="{ci:FluentIconSource &#xE7B7;}"
+                    Header="启用置顶增强"
+                    Description="把悬浮窗与点名结果窗口的置顶优先级提升到用户态最高级，任何窗口抢前台都会立即夺回">
+                        <fa:FASettingsExpander.Footer>
+                            <ToggleSwitch IsChecked="{Binding Topmost.Enabled, Mode=TwoWay}"/>
+                        </fa:FASettingsExpander.Footer>
+                    </fa:FASettingsExpander>
+                    <fa:FASettingsExpander
+                    IconSource="{ci:FluentIconSource &#xE8A9;}"
+                    Header="Z 序重推周期"
+                    Description="多久重新置顶一次（毫秒）。越小越霸道，建议 100~500">
+                        <fa:FASettingsExpander.Footer>
+                            <Slider Minimum="50" Maximum="1000" VerticalAlignment="Center" TickFrequency="50" Width="180"
+                                    IsSnapToTickEnabled="True" Classes="auto-tooltip"
+                                    ci3:SliderDragTooltipAssist.StringFormat="F0"
+                                    Value="{Binding Topmost.IntervalMs, Mode=TwoWay}"/>
+                        </fa:FASettingsExpander.Footer>
+                    </fa:FASettingsExpander>
+                    <fa:FASettingsExpander
+                    IconSource="{ci:FluentIconSource &#xE8A9;}"
+                    Header="前台事件钩子"
+                    Description="监听全局前台切换，任何窗口抢焦点都立即重新置顶">
+                        <fa:FASettingsExpander.Footer>
+                            <ToggleSwitch IsChecked="{Binding Topmost.EnableForegroundHook, Mode=TwoWay}"/>
+                        </fa:FASettingsExpander.Footer>
+                    </fa:FASettingsExpander>
+                    <fa:FASettingsExpander
+                    IconSource="{ci:FluentIconSource &#xE8A9;}"
+                    Header="强化置顶样式"
+                    Description="追加 WS_EX_TOPMOST 扩展样式">
+                        <fa:FASettingsExpander.Footer>
+                            <ToggleSwitch IsChecked="{Binding Topmost.EnableTopmostStyle, Mode=TwoWay}"/>
+                        </fa:FASettingsExpander.Footer>
+                    </fa:FASettingsExpander>
+                    <fa:FASettingsExpander
+                    IconSource="{ci:FluentIconSource &#xE8A9;}"
+                    Header="从 Alt+Tab 隐藏"
+                    Description="追加 WS_EX_TOOLWINDOW，任务切换时不显示">
+                        <fa:FASettingsExpander.Footer>
+                            <ToggleSwitch IsChecked="{Binding Topmost.EnableToolWindow, Mode=TwoWay}"/>
+                        </fa:FASettingsExpander.Footer>
+                    </fa:FASettingsExpander>
+                    <fa:FASettingsExpander
+                    IconSource="{ci:FluentIconSource &#xE8A9;}"
+                    Header="避免抢焦点"
+                    Description="追加 WS_EX_NOACTIVATE，窗口不会抢输入焦点">
+                        <fa:FASettingsExpander.Footer>
+                            <ToggleSwitch IsChecked="{Binding Topmost.EnableNoActivate, Mode=TwoWay}"/>
+                        </fa:FASettingsExpander.Footer>
+                    </fa:FASettingsExpander>
+                    <fa:FASettingsExpander
+                    IconSource="{ci:FluentIconSource &#xE8A9;}"
+                    Header="UIA 增强检测"
+                    Description="用 DWM cloaked 识别被系统隐藏的窗口，避免误判遮挡者">
+                        <fa:FASettingsExpander.Footer>
+                            <ToggleSwitch IsChecked="{Binding Topmost.EnableUiaDetection, Mode=TwoWay}"/>
+                        </fa:FASettingsExpander.Footer>
+                    </fa:FASettingsExpander>
+
+                    <Separator Margin="0 12 0 4" />
                     <ci:IconText Glyph="&#xECF9;" Text="点名设置" Margin="0,0,0,4"/>
                     <fa:FASettingsExpander
                     IconSource="{ci:FluentIconSource &#xECEF;}"

@@ -38,6 +38,8 @@ namespace Classcaller
             services.AddSingleton<WindowSizeHelper>();
             services.AddSingleton<WindowTopmostHelper>();
             services.AddSingleton<ScreenBrightnessHelper>();
+            services.AddSingleton(Settings.Instance.Topmost);
+            services.AddSingleton<TopmostEnhancerService>();
             services.AddSettingsPage<SettingPage>();
             BuildActionMenu();
             services.AddAction<DisableHoverAction>();
@@ -57,6 +59,7 @@ namespace Classcaller
                     IAppHost.GetService<ProfileRuntimeService>().Initialize();
                     IAppHost.GetService<ClasscallerService>().Initialize();
                     IAppHost.GetService<WindowsManager>().Initialize();
+                    IAppHost.GetService<TopmostEnhancerService>().Start();
                 }
                 catch (Exception ex)
                 {
@@ -65,6 +68,11 @@ namespace Classcaller
                     throw;
                 }
 
+            };
+
+            AppBase.Current.AppStopping += (_, _) =>
+            {
+                IAppHost.GetService<TopmostEnhancerService>().Dispose();
             };
         }
 
