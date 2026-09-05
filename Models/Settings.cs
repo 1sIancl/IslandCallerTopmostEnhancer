@@ -1,100 +1,306 @@
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using Microsoft.Win32;
+using System.Text.Json;
+using Classcaller.Services;
+using Classcaller;
 
-namespace IslandCaller.TopmostEnhancer.Models;
-
-/// <summary>
-/// 置顶增强插件的配置。配置持久化在插件配置目录的 Settings.json 中，
-/// 属性变更时自动保存（由 Plugin 入口类订阅 PropertyChanged）。
-/// </summary>
-public class Settings : INotifyPropertyChanged
+namespace Classcaller.Models
 {
-    private bool _enabled = true;
-    private int _intervalMs = 250;
-    private bool _enableTopmostStyle = true;
-    private bool _enableToolWindow = true;
-    private bool _enableNoActivate = true;
-    private bool _enableForegroundHook = true;
-    private bool _enableUiaDetection = true;
-    private List<string> _extraTitleKeywords = new() { "FluentShower", "LiquidShower" };
-
-    /// <summary>是否启用置顶增强（总开关）。</summary>
-    public bool Enabled
+    public class Settings(ProfileService profileService)
     {
-        get => _enabled;
-        set => SetProperty(ref _enabled, value);
-    }
+        public static SettingsModel Instance { get; private set; } = new SettingsModel();
+        public ProfileService ProfileService { get; } = profileService;
 
-    /// <summary>
-    /// Z 序重推周期（毫秒）。越小越"霸道"（与其它置顶窗口竞争时越占优），
-    /// 建议 100 ~ 500。IslandCaller 自带置顶循环为 3000ms。
-    /// </summary>
-    public int IntervalMs
-    {
-        get => _intervalMs;
-        set => SetProperty(ref _intervalMs, value);
-    }
-
-    /// <summary>强化 WS_EX_TOPMOST 扩展样式（置顶带标记）。</summary>
-    public bool EnableTopmostStyle
-    {
-        get => _enableTopmostStyle;
-        set => SetProperty(ref _enableTopmostStyle, value);
-    }
-
-    /// <summary>附加 WS_EX_TOOLWINDOW 样式，从 Alt+Tab 任务切换中隐藏窗口。</summary>
-    public bool EnableToolWindow
-    {
-        get => _enableToolWindow;
-        set => SetProperty(ref _enableToolWindow, value);
-    }
-
-    /// <summary>附加 WS_EX_NOACTIVATE 样式，避免窗口抢焦点。</summary>
-    public bool EnableNoActivate
-    {
-        get => _enableNoActivate;
-        set => SetProperty(ref _enableNoActivate, value);
-    }
-
-    /// <summary>启用全局前台窗口事件钩子：一旦其它窗口成为前台，立即把 IslandCaller 窗口重新顶到最上。</summary>
-    public bool EnableForegroundHook
-    {
-        get => _enableForegroundHook;
-        set => SetProperty(ref _enableForegroundHook, value);
-    }
-
-    /// <summary>
-    /// UIA 增强检测：用 UI Automation 语义（DWM cloaked / offscreen）识别
-    /// 被系统隐藏的 UWP 或现代化窗口，避免把"看不见的窗口"误判为遮挡者，
-    /// 同时更准确地识别全屏状态。默认开启。
-    /// </summary>
-    public bool EnableUiaDetection
-    {
-        get => _enableUiaDetection;
-        set => SetProperty(ref _enableUiaDetection, value);
-    }
-
-    /// <summary>
-    /// 额外匹配关键词（窗口标题包含任一关键词即视为目标窗口）。
-    /// 默认覆盖 IslandCaller 的结果窗口标题。
-    /// </summary>
-    public List<string> ExtraTitleKeywords
-    {
-        get => _extraTitleKeywords;
-        set => SetProperty(ref _extraTitleKeywords, value);
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    private void SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value))
+        private static string GetAppDataRootPath()
         {
-            return;
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Classcaller"
+            );
         }
 
-        field = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        private static bool HasLegacyDefaultProfileFile()
+        {
+            string profilePath = Path.Combine(GetAppDataRootPath(), "Profile");
+            return File.Exists(Path.Combine(profilePath, "Default.csv")) ||
+                   File.Exists(Path.Combine(profilePath, "default.csv"));
+        }
+
+        private static void CleanupLegacyInstall()
+        {
+            string appDataRootPath = GetAppDataRootPath();
+
+            if (Directory.Exists(appDataRootPath))
+            {
+                Directory.Delete(appDataRootPath, recursive: true);
+            }
+
+            Registry.CurrentUser.DeleteSubKeyTree(@"Software\Classcaller", throwOnMissingSubKey: false);
+        }
+
+        private void InitializeNewInstall()
+        {
+            RegistryKey IsC_RootKey = Registry.CurrentUser.CreateSubKey(@"Software\Classcaller", writable: true);
+            RegistryKey IsC_GeneralKey = IsC_RootKey?.CreateSubKey("General", writable: true);
+            RegistryKey IsC_ProfileKey = IsC_RootKey?.CreateSubKey("Profile", writable: true);
+            RegistryKey IsC_HoverKey = IsC_RootKey?.CreateSubKey("Hover", writable: true);
+            RegistryKey IsC_HoverKey_Position = IsC_HoverKey?.CreateSubKey("Position", writable: true);
+            RegistryKey IsC_TTSKey = IsC_RootKey?.CreateSubKey("TTS", writable: true);
+            RegistryKey IsC_CallKey = IsC_RootKey?.CreateSubKey("Call", writable: true);
+            RegistryKey IsC_SecurityKey = IsC_RootKey?.CreateSubKey("Security", writable: true);
+            RegistryKey IsC_AlgorithmKey = IsC_RootKey?.CreateSubKey("Algorithm", writable: true);
+            RegistryKey IsC_AppearanceKey = IsC_RootKey?.CreateSubKey("Appearance", writable: true);
+
+            IsC_GeneralKey?.SetValue("BreakDisable", Instance.General.BreakDisable);
+            IsC_GeneralKey?.SetValue("Interruptable", Instance.General.Interruptable);
+            IsC_ProfileKey?.SetValue("ProfileNum", Instance.Profile.ProfileNum);
+            IsC_ProfileKey?.SetValue("DefaultProfileName", Instance.Profile.DefaultProfile.ToString());
+            IsC_ProfileKey?.SetValue("IsPreferProfile", Instance.Profile.IsPreferProfile);
+            IsC_ProfileKey?.SetValue("ProfileList", JsonSerializer.Serialize(Instance.Profile.ProfileList));
+            IsC_ProfileKey?.SetValue("PreferProfile", JsonSerializer.Serialize(Instance.Profile.ProfilePrefer));
+            IsC_HoverKey?.SetValue("IsEnable", Instance.Hover.IsEnable);
+            IsC_HoverKey?.SetValue("ScalingFactor", Instance.Hover.ScalingFactor);
+            IsC_HoverKey?.SetValue("HoverLayout", Instance.Hover.HoverLayout);
+            IsC_HoverKey?.SetValue("HoverTheme", Instance.Hover.HoverTheme);
+            IsC_HoverKey_Position?.SetValue("X", Instance.Hover.Position.X);
+            IsC_HoverKey_Position?.SetValue("Y", Instance.Hover.Position.Y);
+            IsC_TTSKey?.SetValue("BeforeText", Instance.TTS.BeforeText);
+            IsC_TTSKey?.SetValue("AfterText", Instance.TTS.AfterText);
+            IsC_TTSKey?.SetValue("Provider", Instance.TTS.Provider.ToString());
+            IsC_CallKey?.SetValue("NotifyMethod", Instance.Call.NotifyMethod);
+            IsC_CallKey?.SetValue("ShowerTheme", Instance.Call.ShowerTheme);
+            IsC_CallKey?.SetValue("BaseTime", Instance.Call.BaseTime);
+            IsC_CallKey?.SetValue("AdditionalTime", Instance.Call.AdditionalTime);
+            IsC_SecurityKey?.SetValue("ViewPasswordHash", Instance.Security.ViewPasswordHash);
+            IsC_SecurityKey?.SetValue("IsViewPasswordEnabled", Instance.Security.IsViewPasswordEnabled);
+            IsC_SecurityKey?.SetValue("EditPasswordHash", Instance.Security.EditPasswordHash);
+            IsC_SecurityKey?.SetValue("IsEditPasswordEnabled", Instance.Security.IsEditPasswordEnabled);
+            IsC_AlgorithmKey?.SetValue("HalfRecoveryDistance", Instance.Algorithm.HalfRecoveryDistance);
+            IsC_AlgorithmKey?.SetValue("CurvePower", Instance.Algorithm.CurvePower);
+            IsC_AlgorithmKey?.SetValue("Gamma", Instance.Algorithm.Gamma);
+            IsC_AlgorithmKey?.SetValue("RMin", Instance.Algorithm.RMin);
+            IsC_AlgorithmKey?.SetValue("RMax", Instance.Algorithm.RMax);
+            IsC_AppearanceKey?.SetValue("AccentColor", Instance.Appearance.AccentColor);
+            IsC_AppearanceKey?.SetValue("ResultTextColor", Instance.Appearance.ResultTextColor);
+            IsC_AppearanceKey?.SetValue("HoverText", Instance.Appearance.HoverText);
+            IsC_AppearanceKey?.SetValue("HoverImagePath", Instance.Appearance.HoverImagePath);
+            IsC_AppearanceKey?.SetValue("ResultImagePath", Instance.Appearance.ResultImagePath);
+            IsC_AppearanceKey?.SetValue("FontFamily", Instance.Appearance.FontFamily);
+            IsC_AppearanceKey?.SetValue("ResultFontSize", Instance.Appearance.ResultFontSize);
+            IsC_AppearanceKey?.SetValue("ResultBackground", Instance.Appearance.ResultBackground);
+
+            ProfileService.CreateDemoProfile(Instance.Profile.DefaultProfile);
+            ClassIsland.Core.Controls.CommonTaskDialogs.ShowDialog("Welcome", "欢迎使用Classcaller2.0");
+        }
+
+        public void Load()
+        {
+            RegistryKey IsC_RootKey = Registry.CurrentUser.OpenSubKey(@"Software\Classcaller", writable: true);
+            RegistryKey IsC_GeneralKey;
+            RegistryKey IsC_ProfileKey;
+            RegistryKey IsC_HoverKey;
+            RegistryKey IsC_HoverKey_Position;
+            RegistryKey IsC_TTSKey;
+            RegistryKey IsC_CallKey;
+            RegistryKey IsC_SecurityKey;
+            RegistryKey IsC_AlgorithmKey;
+            RegistryKey IsC_AppearanceKey;
+
+            if (IsC_RootKey == null)
+            {
+                InitializeNewInstall();
+            }
+            else
+            {
+                if (HasLegacyDefaultProfileFile())
+                {
+                    CleanupLegacyInstall();
+                    InitializeNewInstall();
+                    SettingsBinder.Bind(Instance, Save);
+                    return;
+                }
+
+                IsC_GeneralKey = IsC_RootKey?.OpenSubKey("General", writable: true);
+                IsC_ProfileKey = IsC_RootKey?.OpenSubKey("Profile", writable: true);
+                IsC_HoverKey = IsC_RootKey?.OpenSubKey("Hover", writable: true);
+                IsC_HoverKey_Position = IsC_HoverKey?.OpenSubKey("Position", writable: true);
+                IsC_TTSKey = IsC_RootKey?.OpenSubKey("TTS", writable: true) ?? IsC_RootKey?.CreateSubKey("TTS", writable: true);
+                IsC_CallKey = IsC_RootKey?.OpenSubKey("Call", writable: true) ?? IsC_RootKey?.CreateSubKey("Call", writable: true);
+                IsC_SecurityKey = IsC_RootKey?.OpenSubKey("Security", writable: true) ?? IsC_RootKey?.CreateSubKey("Security", writable: true);
+                IsC_AlgorithmKey = IsC_RootKey?.OpenSubKey("Algorithm", writable: true) ?? IsC_RootKey?.CreateSubKey("Algorithm", writable: true);
+                IsC_AppearanceKey = IsC_RootKey?.OpenSubKey("Appearance", writable: true) ?? IsC_RootKey?.CreateSubKey("Appearance", writable: true);
+
+                Instance.General.BreakDisable = Convert.ToBoolean(IsC_GeneralKey?.GetValue("BreakDisable") ?? true);
+                Instance.General.Interruptable = Convert.ToBoolean(IsC_GeneralKey?.GetValue("Interruptable") ?? false);
+                Instance.Profile.ProfileNum = Convert.ToInt32(IsC_ProfileKey?.GetValue("ProfileNum"));
+                Instance.Profile.DefaultProfile = Guid.Parse(IsC_ProfileKey?.GetValue("DefaultProfileName") as string);
+                Instance.Profile.IsPreferProfile = Convert.ToBoolean(IsC_ProfileKey?.GetValue("IsPreferProfile") ?? false);
+                string profileListJson = IsC_ProfileKey?.GetValue("ProfileList") as string ?? "{}";
+                string profilePreferJson = IsC_ProfileKey?.GetValue("PreferProfile") as string ?? "{}";
+                Instance.Profile.ProfileList = JsonSerializer.Deserialize<Dictionary<Guid, string>>(profileListJson) ?? new Dictionary<Guid, string>();
+                Instance.Profile.ProfilePrefer = JsonSerializer.Deserialize<Dictionary<Guid, Guid>>(profilePreferJson) ?? new Dictionary<Guid, Guid>();
+                Instance.Hover.IsEnable = Convert.ToBoolean(IsC_HoverKey?.GetValue("IsEnable") ?? true);
+                Instance.Hover.ScalingFactor = Convert.ToDouble(IsC_HoverKey?.GetValue("ScalingFactor") ?? 1.0);
+                Instance.Hover.HoverLayout = Convert.ToInt32(IsC_HoverKey?.GetValue("HoverLayout") ?? 0);
+                Instance.Hover.HoverTheme = Convert.ToInt32(IsC_HoverKey?.GetValue("HoverTheme") ?? 0);
+                Instance.Hover.Position.X = Convert.ToDouble(IsC_HoverKey_Position?.GetValue("X") ?? 200.0);
+                Instance.Hover.Position.Y = Convert.ToDouble(IsC_HoverKey_Position?.GetValue("Y") ?? 200.0);
+                Instance.TTS.BeforeText = IsC_TTSKey?.GetValue("BeforeText") as string ?? string.Empty;
+                Instance.TTS.AfterText = IsC_TTSKey?.GetValue("AfterText") as string ?? string.Empty;
+                Instance.TTS.Provider = ReadTtsProvider(IsC_TTSKey?.GetValue("Provider"));
+                Instance.Call.NotifyMethod = Convert.ToInt32(IsC_CallKey?.GetValue("NotifyMethod") ?? 1);
+                Instance.Call.ShowerTheme = Convert.ToInt32(IsC_CallKey?.GetValue("ShowerTheme") ?? 0);
+                Instance.Call.BaseTime = Convert.ToSingle(IsC_CallKey?.GetValue("BaseTime") ?? 1.0f);
+                Instance.Call.AdditionalTime = Convert.ToSingle(IsC_CallKey?.GetValue("AdditionalTime") ?? 2.0f);
+                // 兼容旧键名 PasswordHash/IsEnabled：迁移到「查看密码」
+                var legacyViewPasswordHash = IsC_SecurityKey?.GetValue("PasswordHash") as string;
+                var legacyViewPasswordEnabled = IsC_SecurityKey?.GetValue("IsEnabled");
+                Instance.Security.ViewPasswordHash = IsC_SecurityKey?.GetValue("ViewPasswordHash") as string
+                    ?? legacyViewPasswordHash ?? string.Empty;
+                Instance.Security.IsViewPasswordEnabled = Convert.ToBoolean(
+                    IsC_SecurityKey?.GetValue("IsViewPasswordEnabled") ?? legacyViewPasswordEnabled ?? false);
+                Instance.Security.EditPasswordHash = IsC_SecurityKey?.GetValue("EditPasswordHash") as string ?? string.Empty;
+                Instance.Security.IsEditPasswordEnabled = Convert.ToBoolean(IsC_SecurityKey?.GetValue("IsEditPasswordEnabled") ?? false);
+                Instance.Algorithm.HalfRecoveryDistance = Convert.ToDouble(IsC_AlgorithmKey?.GetValue("HalfRecoveryDistance") ?? 5.0);
+                Instance.Algorithm.CurvePower = Convert.ToDouble(IsC_AlgorithmKey?.GetValue("CurvePower") ?? 6.0);
+                Instance.Algorithm.Gamma = Convert.ToDouble(IsC_AlgorithmKey?.GetValue("Gamma") ?? 0.9);
+                Instance.Algorithm.RMin = Convert.ToDouble(IsC_AlgorithmKey?.GetValue("RMin") ?? 0.6);
+                Instance.Algorithm.RMax = Convert.ToDouble(IsC_AlgorithmKey?.GetValue("RMax") ?? 1.6);
+                Instance.Appearance.AccentColor = IsC_AppearanceKey?.GetValue("AccentColor") as string ?? "#0078D4";
+                Instance.Appearance.ResultTextColor = IsC_AppearanceKey?.GetValue("ResultTextColor") as string ?? string.Empty;
+                Instance.Appearance.HoverText = IsC_AppearanceKey?.GetValue("HoverText") as string ?? "Call";
+                Instance.Appearance.HoverImagePath = IsC_AppearanceKey?.GetValue("HoverImagePath") as string ?? string.Empty;
+                Instance.Appearance.ResultImagePath = IsC_AppearanceKey?.GetValue("ResultImagePath") as string ?? string.Empty;
+                Instance.Appearance.FontFamily = IsC_AppearanceKey?.GetValue("FontFamily") as string ?? "HarmonyOS Sans SC";
+                Instance.Appearance.ResultFontSize = Convert.ToDouble(IsC_AppearanceKey?.GetValue("ResultFontSize") ?? 60);
+                Instance.Appearance.ResultBackground = IsC_AppearanceKey?.GetValue("ResultBackground") as string ?? string.Empty;
+                Save();
+            }
+
+            SettingsBinder.Bind(Instance, Save);
+        }
+
+        public void Save()
+        {
+            RegistryKey IsC_RootKey = Registry.CurrentUser.OpenSubKey(@"Software\Classcaller", writable: true);
+            RegistryKey IsC_GeneralKey = IsC_RootKey?.OpenSubKey("General", writable: true);
+            RegistryKey IsC_ProfileKey = IsC_RootKey?.OpenSubKey("Profile", writable: true);
+            RegistryKey IsC_HoverKey = IsC_RootKey?.OpenSubKey("Hover", writable: true);
+            RegistryKey IsC_HoverKey_Position = IsC_HoverKey?.OpenSubKey("Position", writable: true);
+            RegistryKey IsC_TTSKey = IsC_RootKey?.OpenSubKey("TTS", writable: true) ?? IsC_RootKey?.CreateSubKey("TTS", writable: true);
+            RegistryKey IsC_CallKey = IsC_RootKey?.OpenSubKey("Call", writable: true) ?? IsC_RootKey?.CreateSubKey("Call", writable: true);
+            RegistryKey IsC_SecurityKey = IsC_RootKey?.OpenSubKey("Security", writable: true) ?? IsC_RootKey?.CreateSubKey("Security", writable: true);
+            RegistryKey IsC_AlgorithmKey = IsC_RootKey?.OpenSubKey("Algorithm", writable: true) ?? IsC_RootKey?.CreateSubKey("Algorithm", writable: true);
+            RegistryKey IsC_AppearanceKey = IsC_RootKey?.OpenSubKey("Appearance", writable: true) ?? IsC_RootKey?.CreateSubKey("Appearance", writable: true);
+
+            IsC_GeneralKey?.SetValue("BreakDisable", Instance.General.BreakDisable);
+            IsC_GeneralKey?.SetValue("Interruptable", Instance.General.Interruptable);
+            IsC_ProfileKey?.SetValue("ProfileNum", Instance.Profile.ProfileNum);
+            IsC_ProfileKey?.SetValue("DefaultProfileName", Instance.Profile.DefaultProfile.ToString());
+            IsC_ProfileKey?.SetValue("IsPreferProfile", Instance.Profile.IsPreferProfile);
+            IsC_ProfileKey?.SetValue("ProfileList", JsonSerializer.Serialize(Instance.Profile.ProfileList));
+            IsC_ProfileKey?.SetValue("PreferProfile", JsonSerializer.Serialize(Instance.Profile.ProfilePrefer));
+            IsC_HoverKey?.SetValue("IsEnable", Instance.Hover.IsEnable);
+            IsC_HoverKey?.SetValue("ScalingFactor", Instance.Hover.ScalingFactor);
+            IsC_HoverKey?.SetValue("HoverLayout", Instance.Hover.HoverLayout);
+            IsC_HoverKey?.SetValue("HoverTheme", Instance.Hover.HoverTheme);
+            IsC_HoverKey_Position?.SetValue("X", Instance.Hover.Position.X);
+            IsC_HoverKey_Position?.SetValue("Y", Instance.Hover.Position.Y);
+            IsC_TTSKey?.SetValue("BeforeText", Instance.TTS.BeforeText);
+            IsC_TTSKey?.SetValue("AfterText", Instance.TTS.AfterText);
+            IsC_TTSKey?.SetValue("Provider", Instance.TTS.Provider.ToString());
+            IsC_CallKey?.SetValue("NotifyMethod", Instance.Call.NotifyMethod);
+            IsC_CallKey?.SetValue("ShowerTheme", Instance.Call.ShowerTheme);
+            IsC_CallKey?.SetValue("BaseTime", Instance.Call.BaseTime);
+            IsC_CallKey?.SetValue("AdditionalTime", Instance.Call.AdditionalTime);
+            IsC_SecurityKey?.SetValue("ViewPasswordHash", Instance.Security.ViewPasswordHash);
+            IsC_SecurityKey?.SetValue("IsViewPasswordEnabled", Instance.Security.IsViewPasswordEnabled);
+            IsC_SecurityKey?.SetValue("EditPasswordHash", Instance.Security.EditPasswordHash);
+            IsC_SecurityKey?.SetValue("IsEditPasswordEnabled", Instance.Security.IsEditPasswordEnabled);
+            IsC_AlgorithmKey?.SetValue("HalfRecoveryDistance", Instance.Algorithm.HalfRecoveryDistance);
+            IsC_AlgorithmKey?.SetValue("CurvePower", Instance.Algorithm.CurvePower);
+            IsC_AlgorithmKey?.SetValue("Gamma", Instance.Algorithm.Gamma);
+            IsC_AlgorithmKey?.SetValue("RMin", Instance.Algorithm.RMin);
+            IsC_AlgorithmKey?.SetValue("RMax", Instance.Algorithm.RMax);
+            IsC_AppearanceKey?.SetValue("AccentColor", Instance.Appearance.AccentColor);
+            IsC_AppearanceKey?.SetValue("ResultTextColor", Instance.Appearance.ResultTextColor);
+            IsC_AppearanceKey?.SetValue("HoverText", Instance.Appearance.HoverText);
+            IsC_AppearanceKey?.SetValue("HoverImagePath", Instance.Appearance.HoverImagePath);
+            IsC_AppearanceKey?.SetValue("ResultImagePath", Instance.Appearance.ResultImagePath);
+            IsC_AppearanceKey?.SetValue("FontFamily", Instance.Appearance.FontFamily);
+            IsC_AppearanceKey?.SetValue("ResultFontSize", Instance.Appearance.ResultFontSize);
+            IsC_AppearanceKey?.SetValue("ResultBackground", Instance.Appearance.ResultBackground);
+        }
+
+        /// <summary>
+        /// 替换当前设置模型，并将其绑定到注册表保存逻辑。
+        /// </summary>
+        public void ReplaceModel(SettingsModel model)
+        {
+            ArgumentNullException.ThrowIfNull(model);
+            Instance = model;
+            SettingsBinder.Bind(Instance, Save);
+            Save();
+        }
+
+        private static TtsProvider ReadTtsProvider(object? value)
+        {
+            if (value is string name && Enum.TryParse(name, ignoreCase: true, out TtsProvider provider) &&
+                Enum.IsDefined(provider))
+            {
+                return provider;
+            }
+
+            if (value is int numericValue && Enum.IsDefined(typeof(TtsProvider), numericValue))
+            {
+                return (TtsProvider)numericValue;
+            }
+
+            return TtsProvider.None;
+        }
+
+        /// <summary>计算密码的 SHA256 哈希（十六进制大写）。</summary>
+        public static string HashPassword(string password)
+        {
+            var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(password));
+            return Convert.ToHexString(bytes);
+        }
+
+        /// <summary>验证明文密码是否与存储的哈希匹配。</summary>
+        public static bool VerifyPassword(string password, string hash)
+        {
+            if (string.IsNullOrEmpty(hash)) return false;
+            return string.Equals(HashPassword(password), hash, StringComparison.OrdinalIgnoreCase);
+        }
     }
+    public static class SettingsBinder
+    {
+        public static void Bind(SettingsModel model, Action onChange)
+        {
+            // General
+            model.General.PropertyChanged += (_, _) => onChange();
+
+            // Hover
+            model.Hover.PropertyChanged += (_, _) => onChange();
+            model.Hover.Position.PropertyChanged += (_, _) => onChange();
+
+            // TTS
+            model.TTS.PropertyChanged += (_, _) => onChange();
+
+            // Call
+            model.Call.PropertyChanged += (_, _) => onChange();
+
+            // Profile
+            model.Profile.PropertyChanged += (_, _) => onChange();
+
+            // Security
+            model.Security.PropertyChanged += (_, _) => onChange();
+
+            // Algorithm
+            model.Algorithm.PropertyChanged += (_, _) => onChange();
+
+            // Appearance
+            model.Appearance.PropertyChanged += (_, _) => onChange();
+        }
+    }
+
 }

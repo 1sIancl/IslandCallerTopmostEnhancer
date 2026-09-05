@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ci="clr-namespace:ClassIsland.Core.Controls;assembly=ClassIsland.Core"
+             xmlns:materials="using:MorerialsAvalonia"
+             xmlns:liquid="using:MorerialsAvalonia.Materials.LiquidGlass"
+             xmlns:vm="using:Classcaller.ViewModels"
+             x:Class="Classcaller.Controls.HoverLiquidControl"
+             x:DataType="vm:HoverFluentViewModel"
+             Focusable="False"
+             HorizontalAlignment="Center"
+             VerticalAlignment="Center"
+             HorizontalContentAlignment="Center"
+             VerticalContentAlignment="Center">
+    <Grid x:Name="DragSurfacePanel"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          Focusable="False">
+        <liquid:LiquidGlassContainer x:Name="GlassContainer"
+                                     CornerRadius="35"
+                                     HighlightIntensity="0.5"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     materials:MaterialForeground.Mode="Automatic">
+            <LayoutTransformControl HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Focusable="False">
+                <LayoutTransformControl.LayoutTransform>
+                    <ScaleTransform ScaleX="{Binding WindowScalingFactor}" ScaleY="{Binding WindowScalingFactor}"/>
+                </LayoutTransformControl.LayoutTransform>
+                <StackPanel Orientation="Horizontal"
+                            Spacing="7"
+                            Margin="7"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <Button x:Name="Button1"
+                            Width="88"
+                            Height="56"
+                            CornerRadius="28"
+                            Classes="accent"
+                            materials:MaterialForeground.Mode="Manual"
+                            Focusable="False"
+                            IsEnabled="{Binding IsEnabled}">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="6"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center">
+                            <Path Data="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" Width="24" Height="24" Fill="White" Stretch="Uniform" VerticalAlignment="Center" Focusable="False"/>
+                            <TextBlock x:Name="CallText"
+                                       Text="{Binding HoverText}"
+                                       FontFamily="{Binding FontFamily}"
+                                       FontWeight="Medium"
+                                       FontSize="21"
+                                       Foreground="White"
+                                       VerticalAlignment="Center"
+                                       Focusable="False"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="Button2"
+                            Width="56"
+                            Height="56"
+                            CornerRadius="28"
+                            materials:MaterialForeground.Mode="Automatic"
+                            IsEnabled="{Binding IsEnabled}"
+                            Focusable="False">
+                        <Path Data="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" Width="24" Height="24" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Stretch="Uniform" Focusable="False"/>
+                    </Button>
+                </StackPanel>
+            </LayoutTransformControl>
+        </liquid:LiquidGlassContainer>
+        <liquid:LiquidGlassButton x:Name="MiniButton"
+                                  Width="56"
+                                  Height="56"
+                                  CornerRadius="28"
+                                  HighlightIntensity="0.6"
+                                  Margin="12"
+                                  materials:MaterialForeground.Mode="Automatic"
+                                  IsVisible="False"
+                                  IsEnabled="{Binding IsEnabled}"
+                                  Focusable="False">
+            <Path x:Name="MiniIcon" Data="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" Width="24" Height="24" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Stretch="Uniform" Focusable="False"/>
+        </liquid:LiquidGlassButton>
+    </Grid>
+</UserControl>

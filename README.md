@@ -1,163 +1,174 @@
-<div align="center">
+# Classcaller
 
-# IslandCaller 置顶增强
+> **灵感来源于 [IslandCaller](https://github.com/HickoryTrail/IslandCaller)**，由 [1sIancl](https://github.com/1sIancl) 独立维护。
+> 如果你原来在用 IslandCaller，可以把 Classcaller 当作它的"换主题、改了一堆东西、修了若干 bug、还能继续维护"的继任者。
 
-**IslandCaller.TopmostEnhancer** · 让 IslandCaller 悬浮窗永远站在屏幕最顶端
+## 这是什么
 
-一个用于 **ClassIsland 2.1.1.x** 的插件，将 [IslandCaller](https://github.com/HickoryTrail/IslandCaller)点名器的悬浮窗与结果窗口置顶优先级提升到**用户态 Windows 的最高级别**——即使在全屏 PPT、白板、直播投屏、视频全屏或其它置顶窗口抢占下，也始终保持在最上层。
+Classcaller 是 [ClassIsland](https://github.com/ClassIsland/ClassIsland) 的点名插件。给老师上课用的：点一下随机抽个人、抽到的名字弹出来（还可以 TTS 念出来），有悬浮窗，名单可以多份管理，能换外观，能设密码防学生乱改。
 
-![Platform](https://img.shields.io/badge/platform-Windows%2010%202004%2B-blue)
-![ClassIsland](https://img.shields.io/badge/ClassIsland-2.1.1.0%20%2F%202.1.1.1-orange)
-![.NET](https://img.shields.io/badge/.NET-10-purple)
-![License](https://img.shields.io/badge/License-GPL--3.0-green)
+需要 ClassIsland 2.2 及以上，Windows 10 2004 起步。
 
-</div>
+## 装上用
 
-## 版本选择
+1. 打开 ClassIsland → **插件市场** → 搜 `Classcaller` → 安装。
+2. **应用设置 → 插件 → Classcaller 设置** → 该改的改。
+3. 首次启动会自动建一份示例名单，进档案编辑替换成自己班的就行。
 
-本仓库同时提供两个技术栈的插件，**按你的 ClassIsland 版本二选一，勿同时装**：
+或手动装：下载 Release 里的 `Classcaller.cipx`，放进 `Plugins/Classcaller/` 目录。
 
-| 版本 | 适用 ClassIsland | 适用 IslandCaller | 技术栈 | 目录 / 下载 |
-|---|---|---|---|---|
-| **net10 版**（本页） | 2.1.1.0 / 2.1.1.1（2.2 技术预览线） | 2.1.x（含 2.1.0.0） | .NET 10 + Avalonia 12 | 仓库根目录；Releases 中 `IslandCaller.TopmostEnhancer.cipx` |
-| **稳定版（net8）** | **2.1.0.1（2.1 稳定线）** | **2.0.1.3** / 2.1.0.0 | .NET 8 + Avalonia 11.3.17 | [`IslandCallerTopmostEnhancer.NET8/`](IslandCallerTopmostEnhancer.NET8/)；Releases 中 `IslandCaller.TopmostEnhancer.NET8.cipx` |
+## 怎么用
 
-两个版本功能完全一致（七机制协同最高置顶 + UIA 增强检测），仅适配不同宿主技术栈。
+点屏幕上**悬浮窗主按钮** = 抽 1 个人。点**副按钮**（或个人点名入口）= 弹"一次抽几个"的小窗口。
 
+其他常用：
 
+- 设置页里能开"下课禁用"（默认开，课间不响应点名，防误触）。
+- 想换悬浮窗位置直接拖；想换外观（颜色/图片/字体/字号/动效）都在"外观设置"里。
+- 想防学生改配置？开"修改密码"，进设置能看不能动，要改东西得输密码。
 
-## 特性
+---
 
--  **用户态最高置顶**：置顶带（topmost band）最顶端 + 持续占据 + 失效即时恢复；
--  **六机制协同**：高频 Z 序重推 / 前台事件钩子 / 扩展样式强化 / Z 序校验自动恢复 /
-  全屏抢占检测 / 窗口自动发现，互相独立、可单独开关；
--  **不抢焦点**：全程 `WS_EX_NOACTIVATE` + `SWP_NOACTIVATE`，点名悬浮窗不会打断教师操作；
--  **Alt+Tab 隐身**：`WS_EX_TOOLWINDOW` 使悬浮窗不进入任务切换列表；
--  **零耦合**：不依赖 IslandCaller 任何程序集，跨插件程序集隔离，可独立安装/卸载；
--  **可视设置**：ClassIsland 设置页内可调总开关、重推周期与各机制开关。
+## 功能一览
 
-## 环境要求
+### 点名
 
-| 项目 | 要求 |
-|---|---|
-| 操作系统 | Windows 10 2004（10.0.19041）及以上，x64 |
-| 主程序 | ClassIsland **2.1.1.0 / 2.1.1.1**（2.2 技术预览线） |
-| 前置插件 | IslandCaller（需要其悬浮窗 / 结果窗口保持置顶时） |
+- **一键抽 1 人**（主按钮）和**一次抽 1~5 人**（副按钮或个人窗口）。
+- **公平性算法**：不是简单随机数。综合三个因素——你给学生设的"手动权重"、本节课内防短期重复、长期被点次数少的会被补偿。长期效果就是"差不多每人都会被点到一遍"。
+- **打断点名**（默认关）：新点名自动顶掉上一次还在展示的结果。
+- **下课禁用**（默认开）：课间不响应任何点名入口。
+- **点名时长**：总时长 = 人数 × 基础时间 + 附加时间，两项都能在设置里调。
 
-## 安装
+### 名单
 
-1. 从 [Releases](../../releases/latest) 下载 `IslandCaller.TopmostEnhancer.cipx`（下载后请核对 MD5）；
-3. 在 ClassIsland 的【应用设置 → 插件】中启用"**IslandCaller 置顶增强**"；
+- **多份名单**：按班级/按科目各一份。其中一份设为默认。
+- **可视化编辑**：直接在档案编辑器里增删学生、改姓名/性别/手动权重。
+- **按科目自动切换**（可选）：为每个科目绑定一份名单，上课时按当前科目自动加载。
+- **多格式导入**：`.txt`（空格/逗号/换行分隔）、`.csv`（不带标题行）、SecRandom `.json`。导入对话框里能选姓名/性别列和男女关键字。
+- **清除历史**：一键清掉当前名单的长期和本节课历史。
 
-## 使用与设置
+### 点名结果展示
 
-插件设置位于【应用设置 → 插件 → IslandCaller 置顶增强】：
+两种渠道（可多选）：
 
-- **启用最高置顶增强**：总开关；
-- **Z 序重推周期**：建议 100~500ms；
-- **前台事件钩子 / 强制置顶样式 / 从 Alt+Tab 隐藏 / 不抢焦点 / UIA 增强检测**：各机制独立开关；
-- **额外匹配的标题关键词**：窗口标题包含任一关键词即纳入最高置顶。
+- **ClassIsland 通知**：走系统通知。
+- **Classcaller 独立窗口**：插件自带的小窗，可选 Fluent 或 LiquidGlass 主题。
 
-设置保存在插件配置目录的 `Settings.json`，修改即自动保存。
+细节：
 
-## 代码结构
+- **自动对比度**：Fluent 主题会自动分析窗口后屏幕亮度，黑白文字自动切换。
+- **TTS 播报**：提供方可选 无/ClassIsland/OmniTTS，前后缀文本可配（"请回答：xxx"这种）。选 OmniTTS 但没装会自动回退到"无"。
 
-```plaintext
-IslandCallerTopmostEnhancer/
-├── IslandCaller.TopmostEnhancer.csproj   // 工程文件（net10.0，直接引用宿主程序集）
-├── manifest.yml                           // 插件清单
-├── Plugin.cs                              // 插件入口：加载配置、注册服务、启动引擎
-├── Models/
-│   └── Settings.cs                        // 配置模型（自动持久化 Settings.json）
-├── Services/
-│   ├── NativeMethods.cs                   // Win32 P/Invoke 层（SetWindowPos / SetWindowLongPtr /
-│   │                                      //   SetWinEventHook / GetWindow / GetMonitorInfo …）
-│   └── TopmostEnhancerService.cs          // 核心引擎：定时重推 + 前台钩子 + 样式强化 +
-│                                          //   Z 序校验自动恢复 + 全屏抢占检测 + 窗口发现
-├── ViewModels/
-│   └── SettingsPageViewModel.cs           // 设置页视图模型
-├── Views/
-│   └── SettingsPage.axaml.cs              // 设置页（纯代码构建）
-├── scripts/
-│   ├── Package-Release.ps1                // 打包脚本（.cipx + MD5）
-│   └── pack.py                            // 备选打包脚本（无 PowerShell 依赖）
-└── icon.png / README.md / LICENSE
-```
+### 悬浮窗
 
-### 核心调用链（TopmostEnhancerService）
+- **三种布局**：完整（主+副按钮）、紧凑（更小）、Mini（只有主按钮）。设置里切换。
+- **两种主题**：Fluent（轻量）和 LiquidGlass（GPU 渲染的玻璃效果；和"展示窗口"不能同时开）。
+- **缩放系数**：0.5~2.0，适配不同屏幕。
+- **位置记忆**：拖哪儿就停哪儿，重启后还在那儿，自动限制在屏幕内。
+- **永远置顶但不抢焦点**：翻 PPT 不影响。
+- **鼠标 + 触控都能拖**：自动区分点击和拖动。
+
+### 自动化与 URI
+
+ClassIsland 自动化里直接用"Classcaller 行动"菜单：
+
+- 随机点名 / 启用或禁用悬浮窗 / 切换档案。
+
+URI（绑快捷方式或联动）：
+
+- `classisland://plugins/Classcaller/Simple/1` — 简单抽 1 人。
+- `classisland://plugins/Classcaller/Advanced/GUI` — 弹"一次抽几个"窗口。
+
+### 外观个性化
+
+**所有外观设置**改后点右下角"**保存修改**"才生效（左侧预览立刻变，悬浮窗/结果窗口要保存后刷新）。
+
+- **强调色**（色盘）：悬浮窗主按钮背景。
+- **悬浮窗文字**：替换主按钮的"Call"，比如设成"随机"就显示"随机"。
+- **抽选时图片**（下拉选内置 + 浏览本地）：6 个内置图标（骰子/名单/星星/对勾/奖杯/随机），也可选本地图片。
+- **结果展示图片**：同样的下拉选项，用在结果窗口名字前面。
+- **字体**（下拉）：从系统已装字体里挑。
+- **结果字号**（滑块 + 实时数值）：拖滑块时旁边实时显示数字。
+- **结果文字色**（色盘 + 开关）：开启用你选的颜色，关掉自动黑白。
+- **结果背景色**（色盘 + 开关）：开启用你选的颜色（支持半透明），关掉透明。
+
+### 安全（密码保护）
+
+两个**独立密码**：
+
+- **查看密码**（进设置页要输的）。
+- **修改密码**（改任何配置要输的）。
+
+可只设一个，也可都设。关闭任一开关会自动解锁对应状态，方便下次直接改。密码用 SHA256 哈希存注册表，不存明文。
+
+### 数据迁移
+
+- **`.iscdoc` 数据包**：在设置页能把全部设置、名单与历史记录导出成一个文件；换机或重装时导入完整恢复。
+- 导入会**完全替换**当前所有数据，导入完需重启 ClassIsland 生效。
+
+---
+
+## 导入文件示例
+
+### 文本名单（`.txt`）
+
+只放姓名，空格/逗号/换行分隔：
 
 ```text
-Start()                                  // AppStarted 后调用
-├── RestartTimer()                       // DispatcherTimer（默认 250ms）
-├── InstallForegroundHook()              // SetWinEventHook(EVENT_SYSTEM_FOREGROUND)
-└── ScanAndApply()                       // 立即执行一次
-
-每次 Tick（UI 线程）：
-ScanAndApply()
-├── 枚举 lifetime.Windows 识别 IslandCaller 窗口 → 更新 _trackedHwnds
-├── IsForegroundFullscreen() ? → ApplyAllTracked()  // 全屏抢占立即重推
-├── 对每个句柄：ApplyAll(hwnd)
-│   ├── SetWindowPos(HWND_TOPMOST, SWP_NOACTIVATE|SWP_ASYNCWINDOWPOS)     // 机制①
-│   └── SetWindowLongPtr(WS_EX_TOPMOST|WS_EX_TOOLWINDOW|WS_EX_NOACTIVATE) // 机制③
-└── HasVisibleWindowAbove(hwnd) ? → ApplyAll(hwnd)  // 机制④ 失效即恢复
-
-前台钩子回调（任意窗口抢前台）：
-OnWinEvent → 节流 50ms → Dispatcher.UIThread.Post(ApplyAllTracked)  // 机制②
+张三 李四
+王五,赵六
+钱七
 ```
 
-## 自动恢复机制
+### CSV 名单（`.csv`）
 
-- **被其它置顶窗口抢占**：其它置顶窗口在之后被置顶时会压在本窗口上方 →
-  ① 的高频重推与 ④ 的 Z 序校验会在 ≤250ms 内重新夺回置顶带最顶端；
-- **用户切换应用 / 全屏应用抢焦点**：② 前台事件钩子立即触发整体重推；
-- **窗口被新创建 / 重新打开**：⑥ 窗口发现每次扫描都会重新纳入并立即置顶；
-- **全屏遮挡**：⑤ 全屏检测在扫描周期内额外触发一次整体重推。
+**不带标题行**。姓名/性别列在导入对话框里指定，男女关键字要跟源文件完全一致：
 
-> **说明**：用户态普通窗口无法覆盖"独占全屏"（exclusive fullscreen，仅见于游戏）。
-> 课堂场景的 PPT / 白板 / 直播 / 视频全屏均为无边框窗口，置顶带可稳压在上。
-
-## 开发与构建
-
-技术栈：.NET 10 / Avalonia 12 / ClassIsland 2.1.1.1（PluginSdk 2.1.1.1 同源 API）
-
-```bash
-# 构建（Release）。ClassIslandRuntimeDir 指向 ClassIsland 2.1.1.1 发布包解压目录
-# （默认 ../ci2111/app-2.1.1.1-0，可用 -p:ClassIslandRuntimeDir=... 覆盖）
-dotnet build IslandCaller.TopmostEnhancer.csproj -c Release --nologo
-
-# 本地打包（生成 .cipx，PowerShell）
-powershell -File scripts\Package-Release.ps1 -Version 1.0.0.0
-
-# 本地打包（备选，Python）
-python scripts\pack.py 1.0.0.0
+```csv
+1,张三,男
+2,李四,女
+3,王五,男
 ```
 
-## 平台适配说明
+### SecRandom 名单（`.json`）
 
-- **Windows（主要目标）**：全部机制可用，达到用户态最高置顶优先级；
-- **Android / iOS / Linux**（ClassIsland 2.2 跨平台预览）：`Start()` 检测到非
-  Windows 平台时直接返回并记录日志，插件空载运行，不影响宿主；
-- **独占全屏应用（游戏）**：系统限制下用户态窗口无法覆盖，属正常行为。
+```json
+{
+  "张三": { "gender": "男" },
+  "李四": { "gender": "女" }
+}
+```
+
+---
+
+## 数据存在哪
+
+- **名单与历史**：`%AppData%\Classcaller`。
+- **设置**（含密码哈希）：注册表 `HKCU\Software\Classcaller`。
+- 换机建议直接导出/导入 `.iscdoc` 数据包。
+
+---
 
 ## 常见问题
 
-- **与 IslandCaller "置顶"冲突吗？**
-  不冲突。本插件在 IslandCaller 自身置顶（3000ms 循环）的基础上，以更短周期
-  （250ms）+ 事件钩子 + Z 序校验进一步强化，二者互不干扰。
-- **卸载后会有残留吗？**
-  不会。停用插件即停止全部机制，不再写入任何窗口样式；IslandCaller 原有置顶功能不受影响。
-- **为什么偶尔看到悬浮窗被全屏游戏盖住？**
-  独占全屏（exclusive fullscreen）由显卡驱动接管，用户态窗口无法覆盖，这是系统限制；
-  改为无边框全屏（窗口化全屏）即可被置顶带压制。
-- **置顶后抢焦点怎么办？**
-  默认已启用 `WS_EX_NOACTIVATE` 与 `SWP_NOACTIVATE`，置顶全程不会夺取输入焦点；
-  如需点击悬浮窗交互，点击时会正常激活（IslandCaller 自身行为）。
+**点了按钮没反应？** 检查是否在课间（"下课禁用"会屏蔽），或看 ClassIsland 日志里搜 `Classcaller` 确认插件跑通了。
+
+**OmniTTS 没生效？** 没装 OmniTTS 插件时，提供方会自动回退"无"。先把 OmniTTS 装好启用。
+
+**导入名单性别错？** 检查导入对话框里的男女关键字跟源文件写法完全一致。
+
+**LiquidGlass 主题异常？** 液态玻璃是实验性效果，GPU 资源开销大、长时间高频点名可能有少量内存占用。生产/教学环境长时间跑建议用 Fluent。
+
+---
 
 ## 致谢
 
-- [ClassIsland](https://github.com/ClassIsland/ClassIsland) —— 插件宿主框架（LGPL-3.0）
-- [IslandCaller](https://github.com/HickoryTrail/IslandCaller) —— 被增强的目标点名插件（GPL-3.0）
+- **灵感来源于 [IslandCaller](https://github.com/HickoryTrail/IslandCaller)**：Classcaller 的所有核心功能（点名、悬浮窗、名单、TTS、设置页结构）都源自 IslandCaller，原作者 [HickoryTrail](https://github.com/HickoryTrail) 的设计是起点。本项目由 [1sIancl](https://github.com/1sIancl) 独立维护、改写并发布。
+- 本项目使用了以下开源库：
+  - [ClassIsland.PluginSdk](https://github.com/ClassIsland/ClassIsland) — 插件 SDK。
+  - [MorerialsAvalonia](https://github.com/HickoryTrail/MorerialsAvalonia) — Avalonia 液态玻璃材质。
+  - [OmniTTS.Shared](https://github.com/ClassIsland) — TTS 集成。
 
-## 许可证
+## 许可
 
-[GPL-3.0](LICENSE)
+本项目使用 [GPL-3.0](https://github.com/1sIancl/IslandCallerTopmostEnhancer/blob/main/LICENSE) 许可证开源。

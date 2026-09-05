@@ -1,84 +1,84 @@
-using System;
-using System.IO;
 using ClassIsland.Core;
 using ClassIsland.Core.Abstractions;
+using ClassIsland.Core.Abstractions.Services;
 using ClassIsland.Core.Attributes;
 using ClassIsland.Core.Extensions.Registry;
+using ClassIsland.Core.Models.Automation;
 using ClassIsland.Shared;
-using ClassIsland.Shared.Helpers;
-using IslandCaller.TopmostEnhancer.Models;
-using IslandCaller.TopmostEnhancer.Services;
-using IslandCaller.TopmostEnhancer.Views;
+using Classcaller.Actions;
+using Classcaller.Controls;
+using Classcaller.Helpers;
+using Classcaller.Models;
+using Classcaller.Services;
+using Classcaller.Services.ClasscallerService;
+using Classcaller.Services.NotificationProvidersNew;
+using Classcaller.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace IslandCaller.TopmostEnhancer;
-
-/// <summary>
-/// IslandCaller 置顶增强插件入口。
-///
-/// 插件本身不依赖 IslandCaller 的任何程序集（跨插件程序集隔离），
-/// 运行时通过反射 / Win32 识别 IslandCaller 的窗口并执行最高级置顶。
-/// </summary>
-[PluginEntrance]
-public class Plugin : PluginBase
+namespace Classcaller
 {
-    private TopmostEnhancerService? _topmostEnhancerService;
-
-    /// <summary>插件设置文件路径（由 Initialize 设置，供设置页"保存更改"使用）。</summary>
-    internal static string SettingsFilePath { get; private set; } = string.Empty;
-
-    /// <summary>
-    /// 立即把指定设置写入配置文件（设置页"保存更改"按钮调用）。
-    /// </summary>
-    internal static void SaveSettings(Settings settings)
+    [PluginEntrance]
+    public class Plugin : PluginBase
     {
-        if (string.IsNullOrEmpty(SettingsFilePath))
+        public override void Initialize(HostBuilderContext context, IServiceCollection services)
         {
-            return;
+            var logger = IAppHost.TryGetService<ILogger<Plugin>>();
+            services.AddSingleton<Status>();
+            services.AddNotificationProvider<ClasscallerNotificationProviderNew>();
+            services.AddSingleton<ClasscallerService>();
+            services.AddSingleton<ProfileService>();
+            services.AddSingleton<HistoryService>();
+            services.AddSingleton<CoreService>();
+            services.AddSingleton<ProfileRuntimeService>();
+            services.AddSingleton<WindowsManager>();
+            services.AddSingleton<LiquidGlassRuntime>();
+            services.AddSingleton<WindowDragHelper>();
+            services.AddSingleton<WindowSizeHelper>();
+            services.AddSingleton<WindowTopmostHelper>();
+            services.AddSingleton<ScreenBrightnessHelper>();
+            services.AddSettingsPage<SettingPage>();
+            BuildActionMenu();
+            services.AddAction<DisableHoverAction>();
+            services.AddAction<EnableHoverAction>();
+            services.AddAction<CallAction>();
+            services.AddAction<SwitchProfileAction, SwitchProfileActionSettingsControl>();
+            AppBase.Current.AppStarted += async (_, _) =>
+            {
+                try
+                {
+                    logger = IAppHost.TryGetService<ILogger<Plugin>>();
+                    IAppHost.GetService<Status>();
+                    logger?.LogInformation("插件状态初始化完成，正在加载设置...");
+                    new Settings(IAppHost.GetService<ProfileService>()).Load();
+                    await IAppHost.GetService<LiquidGlassRuntime>().PrewarmAsync();
+                    logger?.LogDebug("设置加载完成，正在加载默认配置...");
+                    IAppHost.GetService<ProfileRuntimeService>().Initialize();
+                    IAppHost.GetService<ClasscallerService>().Initialize();
+                    IAppHost.GetService<WindowsManager>().Initialize();
+                }
+                catch (Exception ex)
+                {
+                    logger = IAppHost.GetService<ILogger<Plugin>>();
+                    logger.LogCritical($"初始化失败：{ex}");
+                    throw;
+                }
+
+            };
         }
 
-        ConfigureFileHelper.SaveConfig(SettingsFilePath, settings);
-    }
-
-    /// <summary>插件配置（持久化在插件配置目录 Settings.json）。</summary>
-    public Settings Settings { get; set; } = new();
-
-    public override void Initialize(HostBuilderContext context, IServiceCollection services)
-    {
-        // 加载 / 保存配置
-        var settingsPath = Path.Combine(PluginConfigFolder, "Settings.json");
-        Settings = ConfigureFileHelper.LoadConfig<Settings>(settingsPath);
-        SettingsFilePath = settingsPath;
-        Settings.PropertyChanged += (_, _) =>
-            ConfigureFileHelper.SaveConfig(settingsPath, Settings);
-
-        // 注册服务与设置页
-        services.AddSingleton(Settings);
-        services.AddSingleton<TopmostEnhancerService>();
-        services.AddSettingsPage<SettingsPage>();
-
-        // 应用启动完成后启动置顶增强（此时 Avalonia Application 已就绪）
-        AppBase.Current.AppStarted += (_, _) =>
+        private static void BuildActionMenu()
         {
-            try
-            {
-                _topmostEnhancerService = IAppHost.GetService<TopmostEnhancerService>();
-                _topmostEnhancerService.Start();
-            }
-            catch (Exception ex)
-            {
-                IAppHost.GetService<ILogger<Plugin>>()
-                    .LogCritical(ex, "IslandCaller 置顶增强服务启动失败。");
-            }
-        };
-
-        // 应用退出前释放钩子与定时器
-        AppBase.Current.AppStopping += (_, _) =>
-        {
-            _topmostEnhancerService?.Dispose();
-            _topmostEnhancerService = null;
-        };
+            IActionService.ActionMenuTree.Add(new ActionMenuTreeGroup("Classcaller 行动", "\uECF9"));
+            IActionService.ActionMenuTree["Classcaller 行动"].Add(
+                new ActionMenuTreeItem("Classcaller.Call", "随机点名", "\uECF9"));
+            IActionService.ActionMenuTree["Classcaller 行动"].Add(
+                new ActionMenuTreeItem("Classcaller.EnableHover", "启用悬浮窗", "\uF484"));
+            IActionService.ActionMenuTree["Classcaller 行动"].Add(
+                new ActionMenuTreeItem("Classcaller.DisableHover", "禁用悬浮窗", "\uF486"));
+            IActionService.ActionMenuTree["Classcaller 行动"].Add(
+                new ActionMenuTreeItem("Classcaller.SwitchProfile", "切换档案", "\uE9A8"));
+        }
     }
 }

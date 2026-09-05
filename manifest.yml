@@ -1,15 +1,19 @@
-# 插件清单文件。格式参考：
-# https://docs.classisland.tech/dev/plugins/create-project/#插件清单文件
+# nonk8s
+# 插件清单文件使用 YAML 格式存储。
+# YAML 教程：https://www.runoob.com/w3cnote/yaml-intro.html
+# 插件清单格式：https://docs.classisland.tech/zh-cn/latest/dev/plugins/create-project/#%E6%8F%92%E4%BB%B6%E6%B8%85%E5%8D%95%E6%96%87%E4%BB%B6
 
-id: IslandCaller.TopmostEnhancer          # 插件唯一 id
-name: IslandCaller 置顶增强                # 插件显示名称
-description: >-
-  将 IslandCaller 的悬浮窗与点名结果窗口的置顶优先级提升到最高级：
-  高频 Z 序重推 + 前台窗口事件钩子 + 窗口扩展样式强化，多机制同时生效，
-  确保在任何场景下都保持屏幕最上层显示。
-entranceAssembly: "IslandCaller.TopmostEnhancer.dll"   # 插件入口程序集
-apiVersion: 2.1.1.0                        # 面向的 ClassIsland 最低版本（兼容 2.1.1.0 / 2.1.1.1）
+id: Classcaller
+name: Classcaller
+description: 一个基于 ClassIsland 的轻量级点名器（独立维护，支持自定义与密码保护）
+entranceAssembly: "Classcaller.dll"
 url: https://github.com/1sIancl/IslandCallerTopmostEnhancer
 author: 1sIancl
-version: 1.0.1.0
+version: 1.2.1.0
+apiVersion: 2.1.1.1
 icon: icon.png
+repoOwner: 1sIancl
+repoName: IslandCallerTopmostEnhancer
+assetsRoot: main/
+artifactName: Classcaller.cipx
+tagPattern: "*.*.*"
